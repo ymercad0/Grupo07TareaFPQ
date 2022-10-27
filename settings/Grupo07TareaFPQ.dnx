@@ -44,12 +44,47 @@
         <Enabled>0</Enabled>
         <ShowSource>1</ShowSource>
     </Trace1>
-    <Aliases>
-        <Count>0</Count>
-        <SuppressDialog>0</SuppressDialog>
-    </Aliases>
     <Simulator>
         <Freq>1000000</Freq>
         <FreqHi>0</FreqHi>
     </Simulator>
+    <Breakpoints>
+        <Count>0</Count>
+    </Breakpoints>
+    <FET>
+        <Secure_Password />
+        <Extended_Clock_Control_Enable>1</Extended_Clock_Control_Enable>
+        <Advanced_Extended_Clock_Control>0</Advanced_Extended_Clock_Control>
+        <Emulation_mode>0</Emulation_mode>
+        <Free_running>0</Free_running>
+        <Shutting_Down>3</Shutting_Down>
+    </FET>
+    <Memory_Dump>
+        <Start_address />
+        <Lenghth />
+        <Address_info>0</Address_info>
+        <Format>0</Format>
+        <Dump_registers>0</Dump_registers>
+        <PC>0</PC>
+        <SP>0</SP>
+        <SR>0</SR>
+        <all_registers>0</all_registers>
+        <File_name />
+    </Memory_Dump>
+    <EEM_State_Storage>
+        <Buffer>010000000300000000000000</Buffer>
+    </EEM_State_Storage>
+    <EEM_Sequencer>
+        <Buffer>000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000</Buffer>
+    </EEM_Sequencer>
+    <EEM_Cycle_Counter_0>
+        <Counter0>0000000000000000000000000000000000000000000000000000000000000000</Counter0>
+    </EEM_Cycle_Counter_0>
+    <EEM_Cycle_Counter_1>
+        <Counter1>0000000000000000000000000000000000000000000000000000000000000000</Counter1>
+    </EEM_Cycle_Counter_1>
+    <Aliases>
+        <Count>0</Count>
+        <SuppressDialog>0</SuppressDialog>
+    </Aliases>
 </settings>
