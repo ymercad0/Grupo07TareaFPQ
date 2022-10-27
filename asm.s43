@@ -6,196 +6,66 @@
                                         ; outside this module
         ORG     0FFFEh
         DC16    init                    ; set reset vector to 'init' label
-        ORG     0x1C00                  ; RAM starting location
-        
-; Initialize array contents after RAM starting location 
-; Ex. 1 
-size1 db 15    ; starting at 1C00
-      ALIGN 1  ; without the align, array starts at 1C001 which is 
-               ; an odd location. Remember every array element is seperated 
-               ; by 2 bytes
-losValores dw -2, -4, -1, 110, 5, 6, 7, -10, -100, 130, 112, 13, 0, 14, 15   
-
-; Ex. 2
-largo db 6
-ALIGN 1
-lista dw 3, 2, 3, 5, 6, 3  
-valor dw 3
-
-; Ex. 3
-str    db "test///"   ; if defined as a word, there will be a gap between chars
-ignore db "/"
-length db 7
-
-; Ex. 4
-byteLength db 6
-ALIGN 1
-valores dw 00000000b, 100000001b, 11111111b, 10101010b, 11110000b, 10110110b
-
-; Ex. 5
-ALIGN 1
-otraLista   dw 2, 3, 0, 1, 6, 0 ; 2 even, 2 odd, 2 0s
-finalLength db 6
 
         RSEG    CSTACK                  ; pre-declaration of segment
         RSEG    CODE                    ; place program in 'CODE' segment
+        ORG     0x1C00                  ; RAM starting location
 
 init:   MOV     #SFE(CSTACK), SP        ; set up stack
-         
-        
+
+
+UnlockGPIO:                             ; Disable de GPIO power-on default
+        bic.w   #LOCKLPM5,&PM5CTL0      ; high-impedance mode to activade
+                                        ; previously configured port settings
+setupDisplayAndPorts:     
+        ; Manage Ports
+        bis.b #11111001B, &P1DIR   ; set P1.1/2 to input 
+        mov.b #00000110B, &P1REN   ; Activate P1.1/2 pull-up/down resistors
+        bis.b #11111001B, &P1OUT   ; set P1.1/2 pull down resistor
+        bic.b #BIT0, &P1OUT        ; set P1.0 LED off 
+
+        ; Enable LCD segments: 0-21, 26-43
+        mov #0xFFFF, &LCDCPCTL0
+        mov #0xFC3F, &LCDCPCTL1
+        mov #0x0FFF, &LCDCPCTL2
+          
+        ; Initialize LCD 
+        mov #0x041e,&LCDCCTL0 ; sets display with hardware specs needed
+        mov #0x0208, &LCDCVCTL ; enable voltage for display
+        mov #0x8000, &LCDCCPCTL ; enable clock synchronization
+        mov #2, &LCDCMEMCTL ; clear LCD memory (resets screen)
+        bis #1, &LCDCCTL0 ; turn the LCD on
+
+
 main:   NOP                             ; main program
         MOV.W   #WDTPW+WDTHOLD,&WDTCTL  ; Stop watchdog timer
+        call #titleScreen
+        ; call #namesLoop
 
-        ; Ex. 1
-        call #elMayorSetup
+; F(P.Q)
+titleScreen: 
+        mov.b   #0x8E, &0xA29 ; F 
+        mov.b   #0x22, &0xA26 ; (
+        mov.b   #0xCF, &0xA23 ; P
+        mov.b   #0x01, &0xA24 ; .
+        mov.b   #0xFC, &0xA32 ; Q
+        mov.b   #0x02, &0xA33 ; Q (inner line)
+        mov.b   #0x88, &0xA2F ; )
+        ; Check button presses (S1 to quit the title screen)
+        push R5 ; store original register value
+        mov.b &P1IN, R5      ; copy value of the input signal  
+        and.b #00000010B, R5 ; bit mask on S1.1
+        cmp.b #00000000B, R5 ; if pressed (sets to 0 when pressed)
+        jnz titleScreen
+        pop R5
+        mov #2, &LCDCMEMCTL  ; clear screen
+        ret
         
-        ; Ex. 2
-        call #cuantasVecesSetup
-        
-        ; Ex. 3
-        call #largoSetup
-
-        ; Ex. 4
-        call #manipulaBitsSetup
-        
-        ; Ex. 5
-        call #paresEImparesSetup
-        jmp programEnd
-
-; Ex. 1 subroutines
-elMayorSetup:
-        mov #0, R5 ; R5 increments the array indices 
-        mov.b size1, R6  ; R6 keeps track of the current array size   
-                         ; must specify byte operation because if there
-                         ; are contents after the bits, it will move the
-                         ; whole word instead
-        mov losValores(R5), R7 ; good to store first num as the min to compare 
-        jmp elMayor
-        
-elMayor:
-      mov losValores(R5), R8  ; R8 stores the current num we're comparing
-      cmp R7, R8        ; if R8 > R7 
-      jge foundGreater  ; works for signed numbers (not all comparisons work
-                        ;                           for unsigned numbers)
-      ; if we didn't find a greater value, simply cycle through array
-      jmp incrementArray
-
-foundGreater:
-      mov R8, R7
-      jmp incrementArray
-
-incrementArray:  ; basic code of iterating through rest of array
-    incd R5  ; increments to get next array pos (+2, +4 for 1st and 2nd pos)
-    dec R6 
-    jnz elMayor
-    ret
-
-; Ex. 2 subroutines
-; Attempting by iterating backwards (don't need a seperate register to
-;                                    increment index)
-cuantasVecesSetup:
-    mov #0, R7      ; problem counter
-    mov valor, R5   ; #occurrences being counted
-    mov #lista, R6  ; array
-    mov.b largo, R8 ; length of array
-    ; double length and subtract by 2 to get final index
-    add R8, R8      
-    add R8, R6      ; go to final word in array
-    decd R6         ; start at last word in the array
-    jmp cuantasVeces
-
-cuantasVeces:
-    cmp @R6, R5     ; get value for that direction in array memory 
-    jeq foundValue
-    jmp nextValue
-    
-foundValue:
-    inc R7
-    jmp nextValue
-    
-nextValue:
-    decd R6        ; decrease to next element
-    decd R8        ; keep track of array length 
-    jnz cuantasVeces
-    ret
-    
-; Ex. 3 subroutines
-largoSetup:
-    mov #0, R7 ; problem counter
-    mov.b length, R5 ; length of string
-    mov.b ignore, R8 ; character to ignore
-    mov #str, R6  
-    ; Iterate from the back 
-    add R5, R5 ; strings still treated as arrays even if stored as bytes
-    add R5, R6
-    decd R6 ; start at the last word
-    jmp largoEx
-
-largoEx:
-    cmp.b @R6, R8
-    jeq nextChar
-    inc R7  ; if the char isn't the one to be ignored
-    jmp nextChar
-    
-nextChar:
-    decd R6   ; decreases to the next element 
-    decd R5   ; keep track of str length
-    jnz largoEx
-    ret  
-
-; Ex. 4 subroutines
-manipulaBitsSetup:
-    mov byteLength, R5 ; contains size of byte array
-    mov #0, R6           ; index pointer
-    jmp manipulaBits
-
-manipulaBits:
-    bis.b 100000000b, valores(R6) ; set MSB to 1
-    bic.b 000000001b, valores(R6) ; set LSB to 0
-    xor.b 011111110b, valores(R6) ; flip all other bits
-    incd R6 ; access next element 
-    dec R5
-    jnz manipulaBits
-    ret
-    
-; Ex. 5 subroutines
-paresEImparesSetup:
-    mov.b finalLength, R5 ; stores the length of the array 
-    mov #0, R10 ; index for the array
-    mov #0, R6 ; #evens
-    mov #0, R7 ; #odds
-    mov #0, R8 ; #0s
-    jmp paresEImpares
-    
-paresEImpares:
-    tst otraLista(R10)       ; compare with 0
-    jz  incrementZeros
-    bit.b #00000001b, otraLista(R10) ; signed and unsigned *even* 
-                                     ; numbers have LSB = 0 => use bit test
-    jz incrementEvens
-    jmp incrementOdds       ; must be odd if the above fail
-    
-incrementZeros:
-    inc R8
-    jmp increasePointer
-    
-incrementEvens:
-    inc R6
-    jmp increasePointer
-
-incrementOdds:
-    inc R7
-    jmp increasePointer
-
-increasePointer:
-    incd R10
-    dec R5
-    jnz paresEImpares
-    ret
+namesLoop:
+        ret
 
 programEnd:
         JMP $                           ; jump to current location '$'
                                         ; (endless loop)
         NOP
         END
-        
