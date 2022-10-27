@@ -17,11 +17,13 @@ init:   MOV     #SFE(CSTACK), SP        ; set up stack
 UnlockGPIO:                             ; Disable de GPIO power-on default
         bic.w   #LOCKLPM5,&PM5CTL0      ; high-impedance mode to activade
                                         ; previously configured port settings
+
+; ======== Ports and LCD setup. Yariel Mercado 10/27/22 ========
 setupDisplayAndPorts:     
         ; Manage Ports
         bis.b #11111001B, &P1DIR   ; set P1.1/2 to input 
-        mov.b #00000110B, &P1REN   ; Activate P1.1/2 pull-up/down resistors
-        bis.b #11111001B, &P1OUT   ; set P1.1/2 pull down resistor
+        mov.b #00000110B, &P1REN   ; activate P1.1/2 pull-up/down resistors
+        bis.b #00000110B, &P1OUT   ; set P1.1/2 to pull up resistor
         bic.b #BIT0, &P1OUT        ; set P1.0 LED off 
 
         ; Enable LCD segments: 0-21, 26-43
@@ -41,28 +43,56 @@ main:   NOP                             ; main program
         MOV.W   #WDTPW+WDTHOLD,&WDTCTL  ; Stop watchdog timer
         call #titleScreen
         ; call #namesLoop
+        call #programEnd
 
+
+; ======== Title Screen subroutines. Yariel Mercado 10/27/22 ========
+; ======== Draws the title screen and waits for S1.1 input to proceed ========
 ; F(P.Q)
 titleScreen: 
-        mov.b   #0x8E, &0xA29 ; F 
-        mov.b   #0x22, &0xA26 ; (
-        mov.b   #0xCF, &0xA23 ; P
-        mov.b   #0x01, &0xA24 ; .
-        mov.b   #0xFC, &0xA32 ; Q
-        mov.b   #0x02, &0xA33 ; Q (inner line)
-        mov.b   #0x88, &0xA2F ; )
-        ; Check button presses (S1 to quit the title screen)
-        push R5 ; store original register value
+        mov.b #0x8E, &0xA29 ; F 
+        mov.b #0x22, &0xA26 ; (
+        mov.b #0xCF, &0xA23 ; P
+        mov.b #0x01, &0xA24 ; .
+        mov.b #0xFC, &0xA32 ; Q
+        mov.b #0x02, &0xA33 ; Q (inner line)
+        mov.b #0x88, &0xA2F ; )
+        push.w R5 ; store original register value
+        jmp titleScreenInput 
+
+titleScreenInput:
+        ; Check S1.1 button presses
         mov.b &P1IN, R5      ; copy value of the input signal  
-        and.b #00000010B, R5 ; bit mask on S1.1
+        and.b #BIT1, R5 ; bit mask on S1.1
         cmp.b #00000000B, R5 ; if pressed (sets to 0 when pressed)
-        jnz titleScreen
+        jeq titleScreenDelay
+        jmp titleScreenInput ; continue checking for S1 button presses
+
+titleScreenDelay:            
+        call #delay ; debouncing
+        mov.b &P1IN, R5 ; recheck P1.1 value to check if it was really pressed
+        and.b #BIT1, R5 
+        cmp.b #00000010B, R5 ; should be no longer pressed, avoids long presses
+        jne titleScreenInput ; continue to look for valid button presses
         pop R5
         mov #2, &LCDCMEMCTL  ; clear screen
-        ret
-        
+        ret                  ; succesfully processed button input, back to main
+
 namesLoop:
         ret
+
+; ======== Delay subroutines. Yariel Mercado 10/27/22 ========
+; ======== Decrements from a large value to stall for time. ========
+delay:
+        push.w R10 ; store original value
+        mov #0xFF, R10
+        jmp loop
+        
+loop:
+        dec R10
+        jnz loop
+        pop R10 
+        ret ; returns to whatever subroutine the delay was called from
 
 programEnd:
         JMP $                           ; jump to current location '$'
