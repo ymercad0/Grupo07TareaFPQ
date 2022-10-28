@@ -62,8 +62,10 @@ setupDisplayAndPorts:
 
 main:   NOP                             ; main program
         MOV.W   #WDTPW+WDTHOLD,&WDTCTL  ; Stop watchdog timer
+        ; main loop for the program (calls the different states)
         call #titleScreen
         call #namesState
+        call #signedScreen
         call #programEnd
 
 
@@ -161,6 +163,47 @@ namesInputS1P1Debounce:  ; S1.1 debouncing, ends the names subroutines
         pop R5 
         mov #2, &LCDCMEMCTL
         ret  ; return to main
+
+; ======== Signed Screen subroutines. Yariel Mercado 10/28/22 ========
+; ======== Selects signed or unsigned operations ========
+; ======== S1.1 accepts signed nums. S1.2 accepts unsigned nums. ========
+signedScreen:
+        mov.b #0xB7, &0xA29 ; S
+        mov.b #0x28, &0xA26 ; /
+        mov.b #0x6C, &0xA23 ; N (vertical bars)
+        mov.b #0x83, &0xA24 ; N (diagonal part) + ? (dot)
+        mov.b #0xCB, &0xA32 ; ? (shape)
+        push.w R5
+        jmp signedInput
+        
+signedInput:
+        ; Check S1.1/2 button presses
+        mov.b &P1IN, R5     
+        and.b #00000110B, R5 ; bit mask on S1.1/2
+        cmp.b #00000100B, R5 ; if S1.1 is pressed
+        jeq signedS1P1Debounce 
+        cmp.b #00000010B, R5 ; if S1.2 is pressed
+        jeq signedS1P2Debounce
+        jmp signedInput ; continue to cycle for input
+
+signedS1P1Debounce:
+        call #S1P1Debounce
+        tst.b R5 
+        jnz signedInput
+        setn ; set negative flag -> 1, indicating user wants signed operations
+        jmp signedEnd ; both operations for the signed subroutines end the same
+
+signedS1P2Debounce:
+        call #S1P2Debounce
+        tst.b R5 
+        jnz signedInput
+        clrn ; set negative flag -> 0, indicating user rejects signed operations
+        jmp signedEnd
+
+signedEnd:
+        pop R5 
+        mov #2, &LCDCMEMCTL
+        ret
 
 
 ; ======== Debounce subroutines. Yariel Mercado 10/28/22 ========
