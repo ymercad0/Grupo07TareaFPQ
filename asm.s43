@@ -14,23 +14,23 @@
 ; ======== Variable/array directives ========
 ; The names' characters are stored with a HB and LB. 6 arrays to accomodate
 ; the 6 segments. 3 array entries for the 3 names. Values read vertically. 
-CHAR0_H db 0x00, 0xEF, 0x1C ; Y, A, L
-CHAR0_L db 0xB0, 0x00, 0x00
+CHAR1_H db 0x00, 0xEF, 0x1C ; Y, A, L
+CHAR1_L db 0xB0, 0x00, 0x00
 
-CHAR1_H db 0xEF, 0x6C, 0x7C ; A, N, U
-CHAR1_L db 0x00, 0x82, 0x00
+CHAR2_H db 0xEF, 0x6C, 0x7C ; A, N, U
+CHAR2_L db 0x00, 0x82, 0x00
 
-CHAR2_H db 0xCF, 0x80, 0x90 ; R, T, I
-CHAR2_L db 0x02, 0x60, 0x02 
+CHAR3_H db 0xCF, 0x80, 0x90 ; R, T, I
+CHAR3_L db 0x02, 0x50, 0x50 
 
-CHAR3_H db 0x90, 0x6F, 0xB7 ; I, H, S
-CHAR3_L db 0x02, 0x00, 0x00
+CHAR4_H db 0x90, 0x6F, 0xB7 ; I, H, S
+CHAR4_L db 0x50, 0x00, 0x00
 
-CHAR4_H db 0x9F, 0xFC, 0x00 ; E, O, *
-CHAR4_L db 0x00, 0x00, 0x00 
+CHAR5_H db 0x9F, 0xFC, 0x00 ; E, O, *
+CHAR5_L db 0x00, 0x00, 0x00 
 
-CHAR5_H db 0x1C, 0x6C, 0x00 ; L, N, *
-CHAR5_L db 0x00, 0x82, 0x00
+CHAR6_H db 0x1C, 0x6C, 0x00 ; L, N, *
+CHAR6_L db 0x00, 0x82, 0x00
 
 init:   MOV     #SFE(CSTACK), SP        ; set up stack
 
@@ -63,7 +63,7 @@ setupDisplayAndPorts:
 main:   NOP                             ; main program
         MOV.W   #WDTPW+WDTHOLD,&WDTCTL  ; Stop watchdog timer
         call #titleScreen
-        ; call #namesLoop
+        call #namesState
         call #programEnd
 
 
@@ -83,24 +83,106 @@ titleScreen:
 
 titleScreenInput:
         ; Check S1.1 button presses
-        mov.b &P1IN, R5      ; copy value of the input signal  
+        mov.b &P1IN, R5      ; copy value of the input signal *(ALWAYS USE R5)*
         and.b #BIT1, R5 ; bit mask on S1.1
         cmp.b #00000000B, R5 ; if pressed (sets to 0 when pressed)
-        jeq titleScreenDelay
+        jeq titleScreenDebounce
         jmp titleScreenInput ; continue checking for S1 button presses
 
-titleScreenDelay:            
-        call #delay ; debouncing
-        mov.b &P1IN, R5 ; recheck P1.1 value to check if it was really pressed
-        and.b #BIT1, R5 
-        cmp.b #00000010B, R5 ; should be no longer pressed, avoids long presses
-        jne titleScreenInput ; continue to look for valid button presses
+titleScreenDebounce:            
+        call #S1P1Debounce
+        tst.b R5 ; 0 if debounce was succesful
+        jnz titleScreenInput ; continue to look for valid button presses
         pop R5
         mov #2, &LCDCMEMCTL  ; clear screen
         ret                  ; succesfully processed button input, back to main
 
-namesLoop:
+; ======== Name Screen subroutines. Yariel Mercado 10/28/22 ========
+; ======== Draws the names of the team members. ========
+; ======== S1.1 ends this subroutine. S1.2 advances to the next name. ========
+namesState: ; initialize the names loop state
+        push.w R5 ; always used to read button states
+        push.w R6
+        mov #0, R6 ; counter to iterate over the names' arrays
+        jmp drawNames ; draw the first name
+        
+drawNames:
+        mov #2, &LCDCMEMCTL ; redraw the current screen with the next name
+        cmp.b #3, R6 ; reloop to the start of the array (last index is 2)
+        jeq resetNamesIndex
+        ; move each high and low bytes into the corresponding memory segments
+        ; character 1
+        mov.b CHAR1_H(R6), &0xA29 
+        mov.b CHAR1_L(R6), &0xA2A
+        ; character 2
+        mov.b CHAR2_H(R6), &0xA25
+        mov.b CHAR2_L(R6), &0xA26
+        ; character 3
+        mov.b CHAR3_H(R6), &0xA23
+        mov.b CHAR3_L(R6), &0xA24
+        ; character 4
+        mov.b CHAR4_H(R6), &0xA32
+        mov.b CHAR4_L(R6), &0xA33
+        ; character 5
+        mov.b CHAR5_H(R6), &0xA2E
+        mov.b CHAR5_L(R6), &0xA2F
+        ; character 6
+        mov.b CHAR6_H(R6), &0xA27
+        mov.b CHAR6_L(R6), &0xA28
+        inc R6
+        jmp namesInput
+
+resetNamesIndex: ; loops back to the first name (start of array)
+        mov #0, R6
+        jmp drawNames
+
+namesInput:
+        ; Check S1.1/2 button presses
+        mov.b &P1IN, R5     
+        and.b #00000110B, R5 ; bit mask on S1.1/2
+        cmp.b #00000010B, R5 ; if S1.2 is pressed
+        jeq namesInputS1P2Debounce 
+        cmp.b #00000100B, R5 ; if S1.1 is pressed
+        jeq namesInputS1P1Debounce
+        jmp namesInput ; continue to cycle for input
+        
+namesInputS1P2Debounce:  ; S1.2 debouncing
+        call #S1P2Debounce
+        tst.b R5 ; 0 if debounce was succesful
+        jnz namesInput 
+        jmp drawNames ; draw the next name if S2 was pressed
+
+namesInputS1P1Debounce:  ; S1.1 debouncing, ends the names subroutines
+        call #S1P1Debounce
+        tst.b R5 ; 0 if debounce was succesful
+        jnz namesInput 
+        ; end the names subroutine, restore register values
+        pop R6
+        pop R5 
+        mov #2, &LCDCMEMCTL
+        ret  ; return to main
+
+
+; ======== Debounce subroutines. Yariel Mercado 10/28/22 ========
+; ======== General delay subroutines for the individual buttons ========
+; Note: R5 should always be used to check for pin states and this register's 
+;       value should be preserved and handled by the subroutine calling the
+;       debouncing. 
+S1P1Debounce: ;S1 Pin 1
+        call #delay ; debouncing
+        mov.b &P1IN, R5 ; recheck P1.1 value to check if it was really pressed
+        and.b #BIT1, R5 
+        sub.b #00000010B, R5 ; should be no longer pressed, avoids long presses
+                             ; if these are the same, R5 == 0
         ret
+ 
+S1P2Debounce: ;S1 Pin 2
+        call #delay ; debouncing
+        mov.b &P1IN, R5 ; recheck P1.2 value to check if it was really pressed
+        and.b #BIT2, R5 
+        sub.b #00000100B, R5 
+        ret
+
 
 ; ======== Delay subroutines. Yariel Mercado 10/27/22 ========
 ; ======== Decrements from a large value to stall for time. ========
