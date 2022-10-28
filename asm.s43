@@ -11,6 +11,27 @@
         RSEG    CODE                    ; place program in 'CODE' segment
         ORG     0x1C00                  ; RAM starting location
 
+; ======== Variable/array directives ========
+; The names' characters are stored with a HB and LB. 6 arrays to accomodate
+; the 6 segments. 3 array entries for the 3 names. Values read vertically. 
+CHAR0_H db 0x00, 0xEF, 0x1C ; Y, A, L
+CHAR0_L db 0xB0, 0x00, 0x00
+
+CHAR1_H db 0xEF, 0x6C, 0x7C ; A, N, U
+CHAR1_L db 0x00, 0x82, 0x00
+
+CHAR2_H db 0xCF, 0x80, 0x90 ; R, T, I
+CHAR2_L db 0x02, 0x60, 0x02 
+
+CHAR3_H db 0x90, 0x6F, 0xB7 ; I, H, S
+CHAR3_L db 0x02, 0x00, 0x00
+
+CHAR4_H db 0x9F, 0xFC, 0x00 ; E, O, *
+CHAR4_L db 0x00, 0x00, 0x00 
+
+CHAR5_H db 0x1C, 0x6C, 0x00 ; L, N, *
+CHAR5_L db 0x00, 0x82, 0x00
+
 init:   MOV     #SFE(CSTACK), SP        ; set up stack
 
 
@@ -94,6 +115,7 @@ loop:
         pop R10 
         ret ; returns to whatever subroutine the delay was called from
 
+; End loop for the program
 programEnd:
         JMP $                           ; jump to current location '$'
                                         ; (endless loop)
