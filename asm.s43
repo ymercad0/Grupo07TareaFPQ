@@ -173,6 +173,7 @@ signedScreen:
         mov.b #0x6C, &0xA23 ; N (vertical bars)
         mov.b #0x83, &0xA24 ; N (diagonal part) + ? (dot)
         mov.b #0xCB, &0xA32 ; ? (shape)
+        mov.b #0xB7, &0xA27 ; S   
         push.w R5
         jmp signedInput
         
@@ -181,10 +182,18 @@ signedInput:
         mov.b &P1IN, R5     
         and.b #00000110B, R5 ; bit mask on S1.1/2
         cmp.b #00000100B, R5 ; if S1.1 is pressed
-        jeq signedS1P1Debounce 
+        jeq signedS1P1Debounce
         cmp.b #00000010B, R5 ; if S1.2 is pressed
-        jeq signedS1P2Debounce
+        jeq signedScreenS1P2pressed
         jmp signedInput ; continue to cycle for input
+
+signedScreenS1P2pressed:
+        mov.b #0x6c, &0xA27 ; N (Vertical bars)
+        mov.b #0x82, &0xA28 ; N (Diagonal part)
+        mov.b &P1IN, R5     
+        cmp.b #00000100B, R5 ; if S1.1 is pressed
+        jeq signedS1P2Debounce
+        jmp signedScreenS1P2pressed
 
 signedS1P1Debounce:
         call #S1P1Debounce
@@ -193,8 +202,8 @@ signedS1P1Debounce:
         setn ; set negative flag -> 1, indicating user wants signed operations
         jmp signedEnd ; both operations for the signed subroutines end the same
 
-signedS1P2Debounce:
-        call #S1P2Debounce
+signedS1P2Debounce: 
+        call #S1P2Debounce 
         tst.b R5 
         jnz signedInput
         clrn ; set negative flag -> 0, indicating user rejects signed operations
