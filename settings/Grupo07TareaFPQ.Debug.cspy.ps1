@@ -23,9 +23,9 @@
 
 if ($debugfile -eq "")
 {
-& "D:\Program Files (HDD)\common\bin\cspybat" -f "D:\RUM\Fall 2022\Arqui 2\HWs\HW#2\settings\Grupo07TareaFPQ.Debug.general.xcl" --backend -f "D:\RUM\Fall 2022\Arqui 2\HWs\HW#2\settings\Grupo07TareaFPQ.Debug.driver.xcl" 
+& "D:\Program Files (HDD)\common\bin\cspybat" -f "C:\Users\Yariel Mercado\Desktop\Grupo07TareaFPQ\settings\Grupo07TareaFPQ.Debug.general.xcl" --backend -f "C:\Users\Yariel Mercado\Desktop\Grupo07TareaFPQ\settings\Grupo07TareaFPQ.Debug.driver.xcl" 
 }
 else
 {
-& "D:\Program Files (HDD)\common\bin\cspybat" -f "D:\RUM\Fall 2022\Arqui 2\HWs\HW#2\settings\Grupo07TareaFPQ.Debug.general.xcl" --debug_file=$debugfile --backend -f "D:\RUM\Fall 2022\Arqui 2\HWs\HW#2\settings\Grupo07TareaFPQ.Debug.driver.xcl" 
+& "D:\Program Files (HDD)\common\bin\cspybat" -f "C:\Users\Yariel Mercado\Desktop\Grupo07TareaFPQ\settings\Grupo07TareaFPQ.Debug.general.xcl" --debug_file=$debugfile --backend -f "C:\Users\Yariel Mercado\Desktop\Grupo07TareaFPQ\settings\Grupo07TareaFPQ.Debug.driver.xcl" 
 }

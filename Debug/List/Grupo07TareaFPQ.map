@@ -2,25 +2,25 @@
 #                                                                              #
 #      IAR Universal Linker V6.6.2.104                                         #
 #                                                                              #
-#           Link time     =  31/Oct/2022  22:36:25                             #
+#           Link time     =  01/Nov/2022  15:59:26                             #
 #           Target CPU    =  MSP430                                            #
-#           List file     =  "D:\RUM\Fall 2022\Arqui 2\HWs\HW#2\Debug\List\Gru #
-#                            po07TareaFPQ.map"                                 #
-#           Output file 1 =  "D:\RUM\Fall 2022\Arqui 2\HWs\HW#2\Debug\Exe\Grup #
-#                            o07TareaFPQ.d43"                                  #
+#           List file     =  "C:\Users\Yariel Mercado\Desktop\Grupo07TareaFPQ\ #
+#                            Debug\List\Grupo07TareaFPQ.map"                   #
+#           Output file 1 =  "C:\Users\Yariel Mercado\Desktop\Grupo07TareaFPQ\ #
+#                            Debug\Exe\Grupo07TareaFPQ.d43"                    #
 #                            Format: ubrof10                                   #
 #                            UBROF version 10.0.6                              #
 #                            Using library modules for C-SPY (-rt)             #
 #           Command line  =  -f                                                #
-#                            C:\Users\YARIEL~1\AppData\Local\Temp\EWEC48.tmp   #
-#                            ("D:\RUM\Fall 2022\Arqui 2\HWs\HW#2\Debug\Obj\asm #
-#                            .r43"                                             #
+#                            C:\Users\YARIEL~1\AppData\Local\Temp\EWDC92.tmp   #
+#                            ("C:\Users\Yariel Mercado\Desktop\Grupo07TareaFPQ #
+#                            \Debug\Obj\asm.r43"                               #
 #                            -o                                                #
-#                            "D:\RUM\Fall 2022\Arqui 2\HWs\HW#2\Debug\Exe\Grup #
-#                            o07TareaFPQ.d43"                                  #
+#                            "C:\Users\Yariel Mercado\Desktop\Grupo07TareaFPQ\ #
+#                            Debug\Exe\Grupo07TareaFPQ.d43"                    #
 #                            -l                                                #
-#                            "D:\RUM\Fall 2022\Arqui 2\HWs\HW#2\Debug\List\Gru #
-#                            po07TareaFPQ.map"                                 #
+#                            "C:\Users\Yariel Mercado\Desktop\Grupo07TareaFPQ\ #
+#                            Debug\List\Grupo07TareaFPQ.map"                   #
 #                            -xms "-ID:\Program Files (HDD)\430\LIB\\" -f      #
 #                            "D:\Program Files (HDD)\430\config\linker\lnk430f #
 #                            r6989.xcl"                                        #
@@ -115,7 +115,7 @@ Absolute parts
            __iar_HWMUL             04C0 
     *************************************************************************
 
-  FILE NAME : D:\RUM\Fall 2022\Arqui 2\HWs\HW#2\Debug\Obj\asm.r43
+  FILE NAME : C:\Users\Yariel Mercado\Desktop\Grupo07TareaFPQ\Debug\Obj\asm.r43
   PROGRAM MODULE, NAME : main
 
 Absolute parts
@@ -130,14 +130,14 @@ CSTACK
   Segment part 0. ROOT 
     -------------------------------------------------------------------------
 <CODE> 1 (was CODE)
-  Relative segment, address: 4400 - 61F7 (0x1df8 bytes), align: 1
+  Relative segment, address: 4400 - 627F (0x1e80 bytes), align: 1
   Segment part 1. ROOT        Intra module refs:   Absolute parts
            ENTRY                   ADDRESS         REF BY
            =====                   =======         ======
-           main                    6070 
+           main                    6078 
            LOCAL                   ADDRESS         
            =====                   =======         
-           init                    6028 
+           init                    6030 
            CHAR1_H                 6000 
            CHAR1_L                 6003 
            CHAR2_H                 6006 
@@ -152,28 +152,38 @@ CSTACK
            CHAR6_L                 6021 
            S_OPTION_H              6024 
            S_OPTION_L              6026 
-           UnlockGPIO              602C 
-           setupDisplayAndPorts    6030 
-           titleScreen             6088 
-           namesState              60CE 
-           signedScreen            615E 
-           programEnd              61F4 
-           titleScreenInput        60B2 
-           titleScreenDebounce     60BE 
-           S1P1Debounce            61C8 
-           drawNames               60D6 
-           resetNamesIndex         612C 
-           namesInput              6130 
+           CONVERSION_CHAR1_H      6028 
+           CONVERSION_CHAR1_L      602A 
+           CONVERSION_CHAR2_H      602C 
+           CONVERSION_CHAR2_L      602E 
+           UnlockGPIO              6034 
+           setupDisplayAndPorts    6038 
+           titleScreen             6094 
+           namesState              60DA 
+           signedScreen            616A 
+           conversionScreen        61D4 
+           programEnd              627C 
+           titleScreenInput        60BE 
+           titleScreenDebounce     60CA 
+           S1P1Debounce            6250 
+           drawNames               60E2 
+           resetNamesIndex         6138 
+           namesInput              613C 
            namesInputS1P2Debounce
-                                   6142 
+                                   614E 
            namesInputS1P1Debounce
-                                   614C 
-           S1P2Debounce            61D6 
-           signedInput             618A 
-           signedS1P1Debounce      619C 
-           signedS1P2Debounce      61B0 
-           delay                   61E4 
-           loop                    61EC 
+                                   6158 
+           S1P2Debounce            625E 
+           signedInput             6196 
+           signedS1P1Debounce      61A8 
+           signedS1P2Debounce      61BC 
+           conversionInput         6206 
+           conversionS1P1Debounce
+                                   6218 
+           conversionS1P2Debounce
+                                   622C 
+           delay                   626C 
+           loop                    6274 
 
 
 
@@ -188,7 +198,7 @@ CSTACK
 SEGMENT              SPACE    START ADDRESS   END ADDRESS     SIZE  TYPE  ALIGN
 =======              =====    =============   ===========     ====  ====  =====
 CSTACK                                 2360 - 23FF              A0   rel    1
-<CODE> 1                               4400 - 61F7            1DF8   rel    1
+<CODE> 1                               4400 - 627F            1E80   rel    1
                                        FFFE - FFFF               2  aseg  
 
                 ****************************************
@@ -197,7 +207,7 @@ CSTACK                                 2360 - 23FF              A0   rel    1
                 *                                      *
                 ****************************************
 
- 7 672 bytes of CODE memory (+ 2 absolute )
+ 7 808 bytes of CODE memory (+ 2 absolute )
    160 bytes of DATA memory
 
 Errors: none
