@@ -37,10 +37,18 @@ CHAR6_L db 0x00, 0x82, 0x00
 S_OPTION_H db 0xB7, 0x6C ; S and N
 S_OPTION_L db 0x00, 0x82
 
+; ==== D->B? / B->D? options ====
+CONVERSION_CHAR1_H db 0xF0, 0xF1 ; D, B
+CONVERSION_CHAR1_L db 0x50, 0x50 
+
+CONVERSION_CHAR2_H db 0xF1, 0xF0 ; B, D
+CONVERSION_CHAR2_L db 0x50, 0x50
+
 ; ======== Notes on the registers ========
 ; R5: For reading input/P1IN 
 ; R6: Array index
 ; R7: Stores S/N values
+; R8: Stores Conversion values
 ; R10: Delay counter
 
 init:   MOV     #SFE(CSTACK), SP        ; set up stack
@@ -77,6 +85,7 @@ main:   NOP                             ; main program
         call #titleScreen
         call #namesState
         call #signedScreen
+        call #conversionScreen
         call #programEnd
 
 
@@ -224,6 +233,59 @@ signedS1P2Debounce:
         mov.b S_OPTION_L(R6), &0xA28
         jmp signedInput ; continue to read from input
 
+; ===== Conversion Screen subroutine. =====
+; ===== Luis D. Gonzalez & Anthony Mendez 10/28/2022-11/1/2022 =====
+; ===== Selects D->B or B->D conversion =====
+; ===== S1.1 accepts conversion, while S1.2 cycles between them. =====
+conversionScreen:
+        mov.b #0xF0, &0xA29 ; D (outter bars) [default option]
+        mov.b #0x50, &0xA2A ; D (inner bars) [default option]
+        mov.b #0x03, &0xA25 ; -
+        mov.b #0x88, &0xA24 ; >
+        mov.b #0xF1, &0xA32 ; B (outter bars) [default option]
+        bis.b #0x50, &0xA33 ; B (inner bars) [default option]
+        mov.b #0xCB, &0xA2E ; ? (shape)
+        push.w R5
+        push.w R6 ; used to flip between the options
+        mov #0, R6 
+        jmp conversionInput
+
+conversionInput:
+        ; Check S1.1/2 button presses
+        mov.b &P1IN, R5     
+        and.b #00000110B, R5 ; bit mask on S1.1/2
+        cmp.b #00000100B, R5 ; if S1.1 is pressed
+        jeq conversionS1P1Debounce
+        cmp.b #00000010B, R5 ; if S1.2 is pressed
+        jeq conversionS1P2Debounce
+        jmp conversionInput ; continue to cycle for input
+
+conversionS1P1Debounce: 
+        ; selects the users option and ends conversion input routines
+        call #S1P1Debounce
+        tst.b R5 
+        jnz conversionInput
+        ; NOTE: THE USERS CHOICE FOR D->B / B->D IS STORED IN R8
+        ; 0 == D->B , 1 == B->D
+        mov R6, R8  ; store the users option
+        pop R6 
+        pop R5
+        mov #2, &LCDCMEMCTL
+        ret
+        
+conversionS1P2Debounce:
+        call #S1P2Debounce 
+        tst.b R5 
+        jnz conversionInput
+        ; flip user option if processed succesfully
+        xor.b #BIT0, R6 ; toggle LSB to flip between the conversions
+        ; draws the conversion
+        mov.b CONVERSION_CHAR1_H(R6), &0xA29 ; "From" High/Low
+        mov.b CONVERSION_CHAR1_L(R6), &0xA2A
+        mov.b CONVERSION_CHAR2_H(R6), &0xA32 ; "To" High/Low
+        mov.b CONVERSION_CHAR2_L(R6), &0xA33
+        jmp conversionInput ; continue to read from input
+        
 ; ======== Debounce subroutines. Yariel Mercado 10/28/22 ========
 ; ======== General delay subroutines for the individual buttons ========
 ; Note: R5 should always be used to check for pin states and this register's 
