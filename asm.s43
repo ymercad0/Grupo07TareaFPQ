@@ -12,6 +12,7 @@
         ORG     0x1C00                  ; RAM starting location
 
 ; ======== Variable/array directives ========
+; ==== Team names ====
 ; The names' characters are stored with a HB and LB. 6 arrays to accomodate
 ; the 6 segments. 3 array entries for the 3 names. Values read vertically. 
 CHAR1_H db 0x1C, 0xEF, 0x00 ; L, A, Y
@@ -31,6 +32,16 @@ CHAR5_L db 0x00, 0x00, 0x00
 
 CHAR6_H db 0x00, 0x6C, 0x1C ; *, N, L
 CHAR6_L db 0x00, 0x82, 0x00
+
+; ==== Signed/Unsigned options ====
+S_OPTION_H db 0xB7, 0x6C ; S and N
+S_OPTION_L db 0x00, 0x82
+
+; ======== Notes on the registers ========
+; R5: For reading input/P1IN 
+; R6: Array index
+; R7: Stores S/N values
+; R10: Delay counter
 
 init:   MOV     #SFE(CSTACK), SP        ; set up stack
 
@@ -108,7 +119,7 @@ namesState: ; initialize the names loop state
         mov #0, R6 ; counter to iterate over the names' arrays
         jmp drawNames ; draw the first name
         
-drawNames:
+drawNames:  ; 
         mov #2, &LCDCMEMCTL ; redraw the current screen with the next name
         cmp.b #3, R6 ; reloop to the start of the array (last index is 2)
         jeq resetNamesIndex
@@ -133,10 +144,10 @@ drawNames:
         mov.b CHAR6_L(R6), &0xA28
         inc R6
         jmp namesInput
-
-resetNamesIndex: ; loops back to the first name (start of array)
-        mov #0, R6
-        jmp drawNames
+        
+resetNamesIndex:
+        mov #0, R6 
+        jmp drawNames ; R6 can only be reset by pressing S2
 
 namesInput:
         ; Check S1.1/2 button presses
@@ -164,17 +175,20 @@ namesInputS1P1Debounce:  ; S1.1 debouncing, ends the names subroutines
         mov #2, &LCDCMEMCTL
         ret  ; return to main
 
-; ======== Signed Screen subroutines. Yariel Mercado 10/28/22 ========
+; ======== Signed Screen subroutines. ========
+; ======== Yariel Mercado & Anthony Mendez 10/28/22-10/31/22 ========
 ; ======== Selects signed or unsigned operations ========
-; ======== S1.1 accepts signed nums. S1.2 accepts unsigned nums. ========
+; ======== S1.1 accepts an option while S1.2 cycles between them. ========
 signedScreen:
         mov.b #0xB7, &0xA29 ; S
         mov.b #0x28, &0xA26 ; /
         mov.b #0x6C, &0xA23 ; N (vertical bars)
         mov.b #0x83, &0xA24 ; N (diagonal part) + ? (dot)
         mov.b #0xCB, &0xA32 ; ? (shape)
-        mov.b #0xB7, &0xA27 ; S   
+        mov.b #0xB7, &0xA27 ; S (default option)
         push.w R5
+        push.w R6 ; used to flip between the options
+        mov #0, R6 
         jmp signedInput
         
 signedInput:
@@ -184,43 +198,38 @@ signedInput:
         cmp.b #00000100B, R5 ; if S1.1 is pressed
         jeq signedS1P1Debounce
         cmp.b #00000010B, R5 ; if S1.2 is pressed
-        jeq signedScreenS1P2pressed
+        jeq signedS1P2Debounce
         jmp signedInput ; continue to cycle for input
 
-signedScreenS1P2pressed:
-        mov.b #0x6c, &0xA27 ; N (Vertical bars)
-        mov.b #0x82, &0xA28 ; N (Diagonal part)
-        mov.b &P1IN, R5     
-        cmp.b #00000100B, R5 ; if S1.1 is pressed
-        jeq signedS1P2Debounce
-        jmp signedScreenS1P2pressed
-
-signedS1P1Debounce:
+signedS1P1Debounce: ; selects the users option and ends signed input routines
         call #S1P1Debounce
         tst.b R5 
         jnz signedInput
-        setn ; set negative flag -> 1, indicating user wants signed operations
-        jmp signedEnd ; both operations for the signed subroutines end the same
-
+        ; NOTE: THE USERS CHOICE FOR S/N IS STORED IN R7
+        ; 0 == SIGNED, 1 == UNSIGNED
+        mov R6, R7  ; store the users option
+        pop R6 
+        pop R5
+        mov #2, &LCDCMEMCTL
+        ret
+        
 signedS1P2Debounce: 
         call #S1P2Debounce 
         tst.b R5 
         jnz signedInput
-        clrn ; set negative flag -> 0, indicating user rejects signed operations
-        jmp signedEnd
-
-signedEnd:
-        pop R5 
-        mov #2, &LCDCMEMCTL
-        ret
-
+        ; flip user option if processed succesfully
+        xor.b #BIT0, R6 ; toggle LSB to flip between the options
+        ; draws the user option
+        mov.b S_OPTION_H(R6), &0xA27 ; signed option High/Low
+        mov.b S_OPTION_L(R6), &0xA28
+        jmp signedInput ; continue to read from input
 
 ; ======== Debounce subroutines. Yariel Mercado 10/28/22 ========
 ; ======== General delay subroutines for the individual buttons ========
 ; Note: R5 should always be used to check for pin states and this register's 
 ;       value should be preserved and handled by the subroutine calling the
 ;       debouncing. 
-S1P1Debounce: ;S1 Pin 1
+S1P1Debounce: ; S1 Pin 1
         call #delay ; debouncing
         mov.b &P1IN, R5 ; recheck P1.1 value to check if it was really pressed
         and.b #BIT1, R5 
@@ -228,13 +237,12 @@ S1P1Debounce: ;S1 Pin 1
                              ; if these are the same, R5 == 0
         ret
  
-S1P2Debounce: ;S1 Pin 2
+S1P2Debounce: ; S1 Pin 2
         call #delay ; debouncing
         mov.b &P1IN, R5 ; recheck P1.2 value to check if it was really pressed
         and.b #BIT2, R5 
         sub.b #00000100B, R5 
         ret
-
 
 ; ======== Delay subroutines. Yariel Mercado 10/27/22 ========
 ; ======== Decrements from a large value to stall for time. ========

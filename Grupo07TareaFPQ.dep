@@ -5,43 +5,54 @@
     <configuration>
         <name>Debug</name>
         <outputs>
-            <file>$TOOLKIT_DIR$\inc\msp430.h</file>
+            <file>$TOOLKIT_DIR$\config\linker\lnk430fr6989.xcl</file>
+            <file>$TOOLKIT_DIR$\config\linker\multiplier32.xcl</file>
+            <file>$PROJ_DIR$\Debug\List\Grupo07TareaFPQ.map</file>
             <file>$PROJ_DIR$\Debug\Obj\asm.r43</file>
-            <file>$TOOLKIT_DIR$\inc\msp430fr6989.h</file>
+            <file>$TOOLKIT_DIR$\inc\msp430.h</file>
             <file>$PROJ_DIR$\Debug\Exe\Grupo07TareaFPQ.d43</file>
             <file>$PROJ_DIR$\asm.s43</file>
+            <file>$TOOLKIT_DIR$\inc\msp430fr6989.h</file>
         </outputs>
         <file>
-            <name>[ROOT_NODE]</name>
+            <name>$PROJ_DIR$\Debug\Exe\Grupo07TareaFPQ.d43</name>
             <outputs>
                 <tool>
                     <name>XLINK</name>
-                    <file> 3</file>
+                    <file> 2</file>
                 </tool>
             </outputs>
+            <inputs>
+                <tool>
+                    <name>XLINK</name>
+                    <file> 0 1 3</file>
+                </tool>
+            </inputs>
         </file>
         <file>
             <name>$PROJ_DIR$\asm.s43</name>
             <outputs>
                 <tool>
                     <name>A430</name>
-                    <file> 1</file>
+                    <file> 3</file>
                 </tool>
             </outputs>
             <inputs>
                 <tool>
                     <name>A430</name>
-                    <file> 0 2</file>
+                    <file> 4 7</file>
                 </tool>
             </inputs>
         </file>
-        <forcedrebuild>
-            <name>[MULTI_TOOL]</name>
-            <tool>XLINK</tool>
-        </forcedrebuild>
-        <forcedrebuild>
-            <name>[REBUILD_ALL]</name>
-        </forcedrebuild>
+        <file>
+            <name>[ROOT_NODE]</name>
+            <outputs>
+                <tool>
+                    <name>XLINK</name>
+                    <file> 5 2</file>
+                </tool>
+            </outputs>
+        </file>
     </configuration>
     <configuration>
         <name>Release</name>
