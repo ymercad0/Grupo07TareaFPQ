@@ -14,22 +14,22 @@
 ; ======== Variable/array directives ========
 ; The names' characters are stored with a HB and LB. 6 arrays to accomodate
 ; the 6 segments. 3 array entries for the 3 names. Values read vertically. 
-CHAR1_H db 0x00, 0xEF, 0x1C ; Y, A, L
-CHAR1_L db 0xB0, 0x00, 0x00
+CHAR1_H db 0x1C, 0xEF, 0x00 ; L, A, Y
+CHAR1_L db 0x00, 0x00, 0xB0
 
-CHAR2_H db 0xEF, 0x6C, 0x7C ; A, N, U
+CHAR2_H db 0x7C, 0x6C, 0xEF ; U, N, A
 CHAR2_L db 0x00, 0x82, 0x00
 
-CHAR3_H db 0xCF, 0x80, 0x90 ; R, T, I
-CHAR3_L db 0x02, 0x50, 0x50 
+CHAR3_H db 0x90, 0x80, 0xCF ; I, T, R
+CHAR3_L db 0x50, 0x50, 0x02 
 
-CHAR4_H db 0x90, 0x6F, 0xB7 ; I, H, S
-CHAR4_L db 0x50, 0x00, 0x00
+CHAR4_H db 0xB7, 0x6F, 0x90 ; S, H, I
+CHAR4_L db 0x00, 0x00, 0x50
 
-CHAR5_H db 0x9F, 0xFC, 0x00 ; E, O, *
+CHAR5_H db 0x00, 0xFC, 0x9F ; *, O, E
 CHAR5_L db 0x00, 0x00, 0x00 
 
-CHAR6_H db 0x1C, 0x6C, 0x00 ; L, N, *
+CHAR6_H db 0x00, 0x6C, 0x1C ; *, N, L
 CHAR6_L db 0x00, 0x82, 0x00
 
 init:   MOV     #SFE(CSTACK), SP        ; set up stack
@@ -173,6 +173,7 @@ signedScreen:
         mov.b #0x6C, &0xA23 ; N (vertical bars)
         mov.b #0x83, &0xA24 ; N (diagonal part) + ? (dot)
         mov.b #0xCB, &0xA32 ; ? (shape)
+        mov.b #0xB7, &0xA27 ; S   
         push.w R5
         jmp signedInput
         
@@ -181,10 +182,18 @@ signedInput:
         mov.b &P1IN, R5     
         and.b #00000110B, R5 ; bit mask on S1.1/2
         cmp.b #00000100B, R5 ; if S1.1 is pressed
-        jeq signedS1P1Debounce 
+        jeq signedS1P1Debounce
         cmp.b #00000010B, R5 ; if S1.2 is pressed
-        jeq signedS1P2Debounce
+        jeq signedScreenS1P2pressed
         jmp signedInput ; continue to cycle for input
+
+signedScreenS1P2pressed:
+        mov.b #0x6c, &0xA27 ; N (Vertical bars)
+        mov.b #0x82, &0xA28 ; N (Diagonal part)
+        mov.b &P1IN, R5     
+        cmp.b #00000100B, R5 ; if S1.1 is pressed
+        jeq signedS1P2Debounce
+        jmp signedScreenS1P2pressed
 
 signedS1P1Debounce:
         call #S1P1Debounce
@@ -193,8 +202,8 @@ signedS1P1Debounce:
         setn ; set negative flag -> 1, indicating user wants signed operations
         jmp signedEnd ; both operations for the signed subroutines end the same
 
-signedS1P2Debounce:
-        call #S1P2Debounce
+signedS1P2Debounce: 
+        call #S1P2Debounce 
         tst.b R5 
         jnz signedInput
         clrn ; set negative flag -> 0, indicating user rejects signed operations
