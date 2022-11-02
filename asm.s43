@@ -49,7 +49,7 @@ DIGITS_H db 0x60, 0xDB ; 1, 2
 DIGITS_L db 0x20, 0x00
 
 ; ==== #of Bits (If B->D was choosen) ==== 
-BITS_H db 0xFC, 0x60, 0xDB, 0xF1, 0x67, 0xB7, 0xBF ; 0,1,2,3,4,5,6
+BITS_H db 0xFC, 0x60, 0xDB, 0xF1, 0x67, 0xB7, 0xBF ; 0, 1, 2, 3, 4, 5, 6
 BITS_L db 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00
 
 ; ======== Notes on the registers ========
@@ -299,30 +299,31 @@ conversionS1P2Debounce:
 ; ===== Number of Digits/Bits subroutines. =====
 ; ===== Luis D. Gonzalez 11/1/2022 =====
 ; ===== Selects 1 or 2 digits between 0-9 (D->B) =====
-; ===== Selects 0-6 between 0-1 (B->B) =====
+; ===== Selects 0-6 between 0-1 (B->D) =====
 numDigitsBits:
         mov.b #0x6C, &0xA29 ; N (outter bars)
         mov.b #0x82, &0xA2A ; N (inner bars)
         mov.b #0x7C, &0xA25 ; U
         mov.b #0x6C, &0xA23 ; M (outter bars)
-        mov.b #0xA1, &0xA24 ; M (inner bars)
+        mov.b #0xA1, &0xA24 ; M (inner bars) + ? (dot)
         mov.b #0xCB, &0xA32 ; ? (shape)
         push.w R5
-        push.w R6 ; used to flip between the options
+        push.w R6 
         mov #0, R6
-        cmp.b #0, R8
+        ; Selects whether to flip between digits or bits. 0 == dec
+        tst.b R8 
         jeq numDigits
-        cmp.b #1, R8
-        jeq numBits
+        ; 1 == bin, only other option
+        jmp numBits
 
 numDigits:
-        ; if user choose D->B conversion
+        ; if user chooses D->B conversion
         mov.b #0x60, &0xA27 ; 1 (outter bars)
         mov.b #0x20, &0xA28 ; 1 (inner bars)
         jmp numDigitsInput
         
 numBits:
-        ; if user choose D->B conversion
+        ; if user choose B->D conversion
         mov.b #0xFC, &0xA27 ; 0
         jmp numBitsInput
         
@@ -352,6 +353,8 @@ numDigitsS1P1Debounce:
         tst.b R5 
         jnz numDigitsInput
         ; NOTE: THE USERS CHOICE FOR #ofDigits IS STORED IN R9 (1 or 2)
+        inc R6 ; since R6 is an index, it'll be 0 or 1. Increment to match
+               ; user option
         mov R6, R9  ; store the users option
         pop R6 
         pop R5
@@ -365,8 +368,8 @@ numDigitsS1P2Debounce:
         ; flip user option if processed succesfully
         xor.b #BIT0, R6 ; toggle LSB to flip between the conversions
         ; draws the conversion
-        mov.b DIGITS_H(R6), &0xA27 ; "From" High/Low
-        mov.b DIGITS_L(R6), &0xA28 ; "To" High/Low
+        mov.b DIGITS_H(R6), &0xA27 ; Flips between one and two
+        mov.b DIGITS_L(R6), &0xA28 ; 
         jmp numDigitsInput ; continue to read from input
         
 numBitsS1P1Debounce:
@@ -375,7 +378,7 @@ numBitsS1P1Debounce:
         tst.b R5 
         jnz numBitsInput
         ; NOTE: THE USERS CHOICE FOR #ofBits IS STORED IN R9 (0-6)
-        mov R6, R9  ; store the users option
+        mov R6, R9  ; store the users option (options here match indeces)
         pop R6 
         pop R5
         mov #2, &LCDCMEMCTL
@@ -385,18 +388,20 @@ numBitsS1P2Debounce:
         call #S1P2Debounce 
         tst.b R5 
         jnz numBitsInput
-        cmp.b #7, R6 ; if R6 is equal to lenght of array, reset R6 to 0 again
-        jeq resetRegister ; subroutine resets R6 back to 0
+        inc R6 ; increment and then display the option (leads to cycling bugs)
+        jmp cycleBits
+
+cycleBits: ; cycle between the 0-6 options (avoid debouncing twice)
+        cmp.b #7, R6 ; if R6 is equal to length of array, reset R6 to 0 again
+        jeq resetRegister 
         ; draws the conversion
-        mov.b BITS_H(R6), &0xA27 ; "From" High/Low
-        mov.b BITS_L(R6), &0xA28 ; "To" High/Low
-        inc R6
+        mov.b BITS_H(R6), &0xA27 
+        mov.b BITS_L(R6), &0xA28 
         jmp numBitsInput ; continue to read from input
 
 resetRegister:
         mov #0, R6
-        jmp numBitsS1P2Debounce
-
+        jmp cycleBits
         
 ; ======== Debounce subroutines. Yariel Mercado 10/28/22 ========
 ; ======== General delay subroutines for the individual buttons ========
