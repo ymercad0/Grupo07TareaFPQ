@@ -46,19 +46,37 @@ CONVERSION_CHAR2_L db 0x51, 0x51
 
 ; ==== #of Digits (If D->B was choosen) ==== 
 DIGITS_H db 0x60, 0xDB ; 1, 2
-DIGITS_L db 0x20, 0x00
+DIGITS_L db 0x00, 0x00
 
 ; ==== #of Bits (If B->D was choosen) ==== 
-BITS_H db 0xFC, 0x60, 0xDB, 0xF1, 0x67, 0xB7, 0xBF ; 0, 1, 2, 3, 4, 5, 6
-BITS_L db 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00
+BITS_H db 0xFC, 0x60, 0xDB, 0xF1, 0x67, 0xB7, 0xBF ; 0,1, 2, 3, 4, 5, 6
+BITS_L db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+
+; ==== Numbers for selection ===
+DEC_NUMS_H db 0xFC, 0x60, 0xDB, 0xF1, 0x67, 0xB7, 0xBF, 0xE0, 0xFF, 0xE7
+DEC_NUMS_L db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+;               0     1     2     3     4     5     6     7     8     9
+
+STORED_NUMBER db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+
+BIN_NUMS_H db 0xFC, 0x60 ; 0, 1
+BIN_NUMS_L db 0x00, 0x00
+
+DEC_SYM_H db 0x03, 0x03 ; + (POS), - (NEG)
+DEC_SYM_L db 0x50, 0x00
+
+BIN_SYM_L db 0x00, 0x04 ; (no sign), - (NEG)
 
 ; ======== Notes on the registers ========
-; R5: For reading input/P1IN 
-; R6: Array index
-; R7: Stores S/N values
-; R8: Stores conversion values (D -> B)
-; R9: Stores #ofDigits (1-2 for D->B or 0-6 for B->D)
+; R5 : For reading input/P1IN 
+; R6 : Array index
+; R7 : Stores S/N values
+; R8 : Stores conversion values (D -> B)
+; R9 : Stores #ofDigits or #ofBits (1-2 for D->B or 0-6 for B->D)
 ; R10: Delay counter
+; R4 : Stores the index of the display position
+; R11: Stores the index of the stored numbers array
+; R12: Stores the sign of the stored number (if any)
 
 init:   MOV     #SFE(CSTACK), SP        ; set up stack
 
@@ -96,6 +114,7 @@ main:   NOP                             ; main program
         call #signedScreen
         call #conversionScreen
         call #numDigitsBits
+        call #numberSelection
         call #programEnd
 
 
@@ -319,7 +338,6 @@ numDigitsBits:
 numDigits:
         ; if user chooses D->B conversion
         mov.b #0x60, &0xA27 ; 1 (outter bars)
-        mov.b #0x20, &0xA28 ; 1 (inner bars)
         jmp numDigitsInput
         
 numBits:
@@ -366,8 +384,8 @@ numDigitsS1P2Debounce:
         tst.b R5 
         jnz numDigitsInput
         ; flip user option if processed succesfully
-        xor.b #BIT0, R6 ; toggle LSB to flip between the conversions
-        ; draws the conversion
+        xor.b #BIT0, R6 ; toggle LSB to flip between the digit numbers
+        ; draws the digit number
         mov.b DIGITS_H(R6), &0xA27 ; Flips between one and two
         mov.b DIGITS_L(R6), &0xA28 ; 
         jmp numDigitsInput ; continue to read from input
@@ -378,7 +396,7 @@ numBitsS1P1Debounce:
         tst.b R5 
         jnz numBitsInput
         ; NOTE: THE USERS CHOICE FOR #ofBits IS STORED IN R9 (0-6)
-        mov R6, R9  ; store the users option (options here match indeces)
+        mov R6, R9  ; store the users option (options here match indexes)
         pop R6 
         pop R5
         mov #2, &LCDCMEMCTL
@@ -403,6 +421,179 @@ resetRegister:
         mov #0, R6
         jmp cycleBits
         
+; ===== Number selection subroutines. =====
+; ===== Anthony Mendez 11/2/2022-11/3/2022 =====
+; ===== Selects the number to be converted (from right to left) =====
+; ===== S1.1 confirms selection; S1.2 cycles numbers. =====
+; ===== For D->B, the leftmost segment will show sign if selected in S/N?=====
+numberSelection:
+        push.w R5
+        push.w R6
+        mov #0, R4
+        mov #0, R11
+        mov #1, R6  ;index starts at 1 for the first value
+        ; Selects whether to cycle through dec or bin nums. 0 == dec
+        tst.b R8 
+        jeq decimalCycle
+        ; 1 == bin, only other option
+        ;jmp binaryCycle
+        
+decimalCycle:
+        mov.b #0xFC, &0xA25 ; 0 (most significant digit)
+        mov.b #0x01, &0xA26 ; . (dot for decimals) here by default
+        mov.b #0xFC, &0xA23 ; 0
+        mov.b #0xFC, &0xA32 ; 0
+        mov.b #0xFC, &0xA2E ; 0
+        mov.b #0xFC, &0xA27 ; 0
+        call #overwriteDot 
+        cmp.b #0 ,R7 ; if the user selected sign
+        jeq drawSign ; draw sign, else leave space empty
+        jmp decimalInput
+
+overwriteDot:
+        cmp.b #2 ,R9  ; if the user selected 2 digits
+        jeq drawDigit ; move the dot, else leave as it is
+        ret
+        drawDigit:
+                mov.b #0x00, &0xA26 ; removing dot
+                mov.b #0x01, &0xA24 ; . (dot for decimals)
+        ret
+        
+drawSign:
+        mov.b #0x03, &0xA29 ; + (positive sign)default
+        mov.b #0x50, &0xA2A
+        jmp decimalInput
+
+decimalInput:
+        ; Check S1.1/2 button presses
+        mov.b &P1IN, R5     
+        and.b #00000110B, R5 ; bit mask on S1.1/2
+        cmp.b #00000100B, R5 ; if S1.1 is pressed
+        jeq decSelectionS1P1Debounce
+        cmp.b #00000010B, R5 ; if S1.2 is pressed
+        jeq decSelectionS1P2Debounce
+        jmp decimalInput ; continue to cycle for input
+        
+decSelectionS1P1Debounce:
+        ; Confirms the decimal number selection
+        call #S1P1Debounce
+        tst.b R5 
+        jnz decimalInput
+        dec R6 ; substract the index added with S1P2 to store exact value
+        mov R6, STORED_NUMBER(R11) ; save values and then index++
+        inc R11                    ; We don't worry about the dot because we
+        mov R6, R15 ; testing, delete later  ; verify the position with R9
+        mov #0, R6 ;reset so that next number starts at zero
+        inc R4 ; increment display position array index
+        cmp.b #5, R4 ; if the next display is the leftmost,
+        jeq isItSigned ;question if its signed
+        cmp.b #6, R4 ; finish selection once everything is picked
+        jeq finishSelection
+        jmp cycleHub
+        
+isItSigned:
+        cmp.b #0, R7 ; if R7
+        jeq cycleDecimalSign
+        jmp finishSelection ;if not signed, finish
+        
+finishSelection:
+        pop R6 
+        pop R5
+        pop R4
+        mov #2, &LCDCMEMCTL
+        ret
+        
+decSelectionS1P2Debounce:
+        call #S1P2Debounce 
+        tst.b R5 
+        jnz decimalInput
+        jmp cycleHub   
+        
+cycleHub:
+        cmp.b #0, R4
+        jeq cycleDecimalNum0
+        cmp.b #1, R4
+        jeq cycleDecimalNum1
+        cmp.b #2, R4
+        jeq cycleDecimalNum2
+        cmp.b #3, R4
+        jeq cycleDecimalNum3
+        cmp.b #4, R4
+        jeq cycleDecimalNum4
+        cmp.b #0, R7
+        jeq cycleDecimalSign
+        
+cycleDecimalNum0:
+        call #resetDecArrayIndex
+        mov.b DEC_NUMS_H(R6), &0xA27
+        mov.b DEC_NUMS_L(R6), &0xA28
+        inc R6
+        jmp decimalInput ; continue to read from input
+        
+cycleDecimalNum1:
+        call #resetDecArrayIndex
+        mov.b DEC_NUMS_H(R6), &0xA2E
+        mov.b DEC_NUMS_L(R6), &0xA2F
+        inc R6
+        jmp decimalInput ; continue to read from input
+
+cycleDecimalNum2:
+        call #resetDecArrayIndex
+        mov.b DEC_NUMS_H(R6), &0xA32
+        mov.b DEC_NUMS_L(R6), &0xA33
+        inc R6
+        jmp decimalInput ; continue to read from input
+
+cycleDecimalNum3:
+        call #resetDecArrayIndex
+        mov.b DEC_NUMS_H(R6), &0xA23
+        bis.b DEC_NUMS_L(R6), &0xA24 ; array with numbers with . (dot)
+        inc R6
+        jmp decimalInput ; continue to read from input
+
+cycleDecimalNum4:
+        call #resetDecArrayIndex
+        mov.b DEC_NUMS_H(R6), &0xA25
+        bis.b DEC_NUMS_L(R6), &0xA26
+        inc R6
+        jmp decimalInput ; continue to read from input
+
+cycleDecimalSign:
+        call #resetSignArrayIndex
+        mov.b DEC_SYM_H(R6), &0xA29
+        mov.b DEC_SYM_L(R6), &0xA2A
+        mov R6, R12 ; store 0 if positive, 1 if negative
+        inc R6
+        jmp decimalInput ; continue to read from input
+        
+resetSignArrayIndex:
+        cmp.b #2, R6 ; if R6 == 2, reset to 0 because the last sign index is 1 
+        jeq signIndexReseter
+        ret
+        signIndexReseter:
+                mov #0, R6
+        ret
+         
+resetDecArrayIndex:
+        cmp.b #10, R6 ; if R6 == 10, reset to 0 because the last number is 9
+        jeq decIndexReseter
+        ret
+        decIndexReseter:
+                mov #0, R6
+        ret
+        
+;binaryCycle:
+;        mov.b 0xFC, &0xA29 ; 0 (6th bit)
+;        mov.b 0xFC, &0xA25 ; 0 (5th bit)
+;        mov.b 0xFC, &0xA23 ; 0 (4th bit)
+;        mov.b 0xFC, &0xA32 ; 0 (3rd bit)
+;        mov.b 0xFC, &0xA2E ; 0 (2nd bit)
+;        mov.b 0xFC, &0xA27 ; 0 (1st bit)
+
+;              0      1      2      3      4      5     
+;POSITION_H 0xA27, 0xA2E, 0xA32, 0xA23, 0xA25, 0xA29 Right to Left
+;POSITION_L 0xA28, 0xA2F, 0xA33, 0xA24, 0xA26, 0xA2A
+
 ; ======== Debounce subroutines. Yariel Mercado 10/28/22 ========
 ; ======== General delay subroutines for the individual buttons ========
 ; Note: R5 should always be used to check for pin states and this register's 
