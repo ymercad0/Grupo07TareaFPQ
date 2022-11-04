@@ -61,7 +61,7 @@
         <Counter1>0000000000000000000000000000000000000000000000000000000000000000</Counter1>
     </EEM_Cycle_Counter_1>
     <DebugChecksum>
-        <Checksum>3142094761</Checksum>
+        <Checksum>1590877429</Checksum>
     </DebugChecksum>
     <CallStack>
         <ShowArgs>0</ShowArgs>
@@ -69,6 +69,15 @@
     <Disassembly>
         <MixedMode>1</MixedMode>
     </Disassembly>
+    <Registers>
+        <regBase0>R13 10</regBase0>
+        <regBase1>R6 10</regBase1>
+        <regBase2>R10 10</regBase2>
+        <regBase3>R8 10</regBase3>
+        <regBase4>R12 10</regBase4>
+        <regBase5>R14 10</regBase5>
+        <regBase6>R15 10</regBase6>
+    </Registers>
     <PowerLog>
         <Title_0>Energy</Title_0>
         <Symbol_0>0 4 0</Symbol_0>

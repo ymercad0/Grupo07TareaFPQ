@@ -57,6 +57,8 @@ DEC_NUMS_H db 0xFC, 0x60, 0xDB, 0xF1, 0x67, 0xB7, 0xBF, 0xE0, 0xFF, 0xE7
 DEC_NUMS_L db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 ;               0     1     2     3     4     5     6     7     8     9
 
+; Stores user input values from right to left
+; Ex. Right most digit on the LCD is stored in index 0
 STORED_NUMBER db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 
 BIN_NUMS_H db 0xFC, 0x60 ; 0, 1
@@ -65,15 +67,21 @@ BIN_NUMS_L db 0x00, 0x00
 DEC_SYM_H db 0x03, 0x03 ; + (POS), - (NEG)
 DEC_SYM_L db 0x50, 0x00
 
+; ==== Result array ====
+RESULT_NUM db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+
 ; ======== Notes on the registers ========
 ; R4 : Stores the index of the display position
 ; R5 : For reading input/P1IN 
-; R6 : Array index
+; R6 : General array index
 ; R7 : Stores S/N values
-; R8 : Stores conversion values (D -> B)
+; R8 : Stores conversion values => 0 for D -> B else 1
 ; R9 : Stores #ofDigits or #ofBits (1-2 for D->B or 0-6 for B->D)
-; R10: Delay counter
+; R10: Delay counter (also used in mult/div routines for general purposes)
 ; R12: Stores the sign of the stored number (if any)
+; R13: Multiply/divide first num. NOTE: Storing works differently on mult/div
+; R14: Multiply/divide second num
+; R15: Store result
 
 init:   MOV     #SFE(CSTACK), SP        ; set up stack
 
@@ -96,7 +104,7 @@ setupDisplayAndPorts:
         mov #0x0FFF, &LCDCPCTL2
           
         ; Initialize LCD 
-        mov #0x041e,&LCDCCTL0 ; sets display with hardware specs needed
+        mov #0x041e, &LCDCCTL0 ; sets display with hardware specs needed
         mov #0x0208, &LCDCVCTL ; enable voltage for display
         mov #0x8000, &LCDCCPCTL ; enable clock synchronization
         mov #2, &LCDCMEMCTL ; clear LCD memory (resets screen)
@@ -112,7 +120,9 @@ main:   NOP                             ; main program
         call #conversionScreen
         call #numDigitsBits
         call #numberSelection
-        call #programEnd
+        call #storeUnsignedDecimal
+        call #endProgramCheck
+        call #main ; naturally loops
 
 
 ; ======== Title Screen subroutines. Yariel Mercado 10/27/22 ========
@@ -154,7 +164,7 @@ namesState: ; initialize the names loop state
         mov #0, R6 ; counter to iterate over the names' arrays
         jmp drawNames ; draw the first name
         
-drawNames:  ; 
+drawNames:   
         mov #2, &LCDCMEMCTL ; redraw the current screen with the next name
         cmp.b #3, R6 ; reloop to the start of the array (last index is 2)
         jeq resetNamesIndex
@@ -442,7 +452,7 @@ decimalCycle:
         mov.b #0xFC, &0xA2E ; 0
         mov.b #0xFC, &0xA27 ; 0
         call #overwriteDot 
-        cmp.b #0 ,R7 ; if the user selected sign
+        cmp.b #0, R7 ; if the user selected sign
         jeq drawSign ; draw sign, else leave space empty
         jmp decimalInput
 
@@ -477,7 +487,7 @@ decSelectionS1P1Debounce:
         tst.b R5 
         jnz decimalInput
         dec R6 ; substract the index added with S1P2 to store exact value
-        mov R6, STORED_NUMBER(R4) ; save values and then index++
+        mov.b R6, STORED_NUMBER(R4) ; save values and then index++
          ; We don't worry about the . because we verify the pos with R9
         inc R4 ; increment display position array index
         mov #0, R6 ;reset so that next number starts at zero
@@ -495,7 +505,6 @@ isItSigned:
 finishSelection:
         pop R6 
         pop R5
-        pop R4
         mov #2, &LCDCMEMCTL
         ret
         
@@ -566,7 +575,8 @@ resetSignArrayIndex:
         cmp.b #2, R6 ; if R6 == 2, reset to 0 because the last sign index is 1 
         jeq signIndexReseter
         ret
-        signIndexReseter:
+        
+signIndexReseter:
         mov #0, R6
         ret
          
@@ -574,7 +584,8 @@ resetDecArrayIndex:
         cmp.b #10, R6 ; if R6 == 10, reset to 0 because the last number is 9
         jeq decIndexReseter
         ret
-        decIndexReseter:
+
+decIndexReseter:
         mov #0, R6
         ret
         
@@ -690,8 +701,329 @@ resetBinArrayIndex:
         cmp.b #2, R6 ; if R6 == 2, reset to 0 because the last index is 1
         jeq binIndexReseter
         ret
-        binIndexReseter:
+        
+binIndexReseter:
         mov #0, R6
+        ret
+        
+; ======== Conversion subroutines. Yariel Mercado 11/3/22-11/4/22 ========
+; ======== Converts the user input to the desired format. Displays it. ========    
+
+
+; Unsigned decimal subroutines. Certain registers aren't needed after
+; we jump to the subroutine that handles the users choice (one for each). 
+storeUnsignedDecimal:      ; Stores int part into R8. Converts from the array.     
+                   ; Store fractional part into R12
+        push.w R6  ; index of the array
+        push.w R10 ; factor
+        push.w R5
+        ; determine how many fractional places
+        mov R9, R5 ; temporarily store the # of whole digits in R5
+        mov #5, R6
+        sub R9, R6 ; 5-R9 (1 or 2) = R6 then move result back into R9
+        mov R6, R9 ; R9 contains # of frac places
+        add R9, R5
+        ; match index. R9 is stopping index for frac part
+        ; R5 is stopping index for the whole part
+        ; reset value
+        mov #0, R6
+        ; Store results
+        mov #0, R8 
+        mov #0, R12
+        mov #1, R10
+        jmp storeFractionalDecimal
+
+storeFractionalDecimal: ; stores the fractional part of the inputted decimal
+                        ; into R12.
+        mov.b STORED_NUMBER(R6), R13 ; R13 and R14 are used to mult
+        mov R10, R14
+        call #multiplyNums ; digit[i] * factor = R15 
+        add R15, R12        ; sum += R15
+        ; factor *= 10 => R10 * 10
+        mov #10, R13
+        mov R10, R14
+        call #multiplyNums
+        mov R15, R10   ; store R10 * 10 => R10
+        inc R6
+        cmp R9, R6    ; stop at fractional part index (R9)
+        jne storeFractionalDecimal
+        mov #1, R10 ; reset to extract integer part
+        jmp storeIntegerDecimal
+
+storeIntegerDecimal: ; stores the integer part of the inputted decimal
+                     ; into R8.
+        ; re use same index as before to get the rest of the bits/digs
+        mov.b STORED_NUMBER(R6), R13 ; R13 and R14 are used to mult
+        mov R10, R14
+        call #multiplyNums ; digit[i] * factor = R15 
+        add R15, R8        ; sum += R15
+        ; factor *= 10 => R10 * 10
+        mov #10, R13
+        mov R10, R14
+        call #multiplyNums
+        mov R15, R10   ; store R10 * 10 => R10
+        inc R6
+        cmp R5, R6    ; stop at integer part index (R5)
+        jne storeIntegerDecimal
+        jmp endStoring
+
+endStoring:
+        pop R5
+        pop R10
+        pop R6
+        jmp decToBin
+        
+; Numbers are already extracted from the user. 
+; Convert the whole part to binary first and then store however many decimal
+; bits fit. 
+decToBin: ; stores the converted bits into the results array
+       mov #0, R5
+       mov #0, R4 ; count number of times we do a push
+       jmp convertIntToBin
+       
+convertIntToBin:
+      mov R8, R13 ; divide R8/2 and use remainder/quotient values
+      mov #2, R14
+      call #divideRegisters
+      ; R13 contains remainder and R14 the quotient
+      push.w R13 ; pop out in reverse order to get proper bit order
+      mov R14, R8 ; R14 is now the new quotient
+      inc R5
+      inc R4
+      cmp #6, R5
+      jeq endConversion ; all 6 bits filled in the whole part 
+      tst.b R8 ; if the quotient (R8) is 0, stop and convert fract part
+               ; (not all bits have been filled)
+      jeq fillFractionalSpots
+      jmp convertIntToBin
+
+; if num is in nn.0nn or n.0nnn => set remaining fractional parts to 0
+; else compute the result
+; Remember R9 contains the #fractional spots
+fillFractionalSpots:
+      dec R9 ; access index of last fractional spot
+      tst.b STORED_NUMBER(R9) ; if 0 fill all the remaining bits with 0
+      jeq fillBits
+      inc R9 ; restore value
+      jmp convertFracToBinSetup
+      
+fillBits: ; fill remaining decimal places with 0
+      mov.b #0, RESULT_NUM(R5) ; DECIMAL PART STORED IN ORDER(no need for stack)
+      inc R5  ; increase number of bits converted 
+      cmp #6, R5
+      jeq endConversion
+      jmp fillBits
+
+convertFracToBinSetup: ; stores subtracting factor in fract dec to bin
+                       ; subtracts by that amt if the factor is exceeded
+      mov #1000, R10 ; 10^n where n is the #fracts
+      cmp #3, R9
+      jeq convertFracToBin
+      mov #10000, R10
+      jmp convertFracToBin
+
+convertFracToBin:
+      mov R12, R13 ; R12*2 = R15
+      mov #2, R14
+      call #multiplyNums
+      cmp R10, R15 ; if R15 >= R10 (factor) then we have a 1. else we have a 0
+      jhs extractHighBit
+      ; else extract low bit (0). Don't sub since we're still in dec form
+      mov.b #0, RESULT_NUM(R5)
+      inc R5
+      cmp #6, R5
+      jeq endConversion ; all 6 bits filled in the whole part 
+      tst.b R12 ; if the quotient (R12) is 0, stop
+      jeq endConversion
+      jmp convertFracToBin
+
+extractHighBit: ; extracts a 1 from the fract part
+      mov.b #1, RESULT_NUM(R5)
+      inc R5
+      sub R10, R15 ; R15-R10 = R15 to get it back into decimal form
+      cmp #6, R5
+      jeq endConversion ; all 6 bits filled in the whole part 
+      tst.b R12 ; if the quotient (R12) is 0, stop
+      jeq endConversion
+      jmp convertFracToBin
+
+fillRemainingBits: ; fill all other fract spots with a 0
+      mov.b #0, RESULT_NUM(R5)
+      inc R5
+      cmp #6, R5
+      jne fillRemainingBits
+      jmp endConversion
+
+endConversion:  ; stops the conversion once all 6 bits are filled
+      ; check if there are any empty spots
+      cmp #6, R5
+      jne fillRemainingBits
+      mov #0, R6 ; index to fill up array
+      jmp fillResultArray
+
+fillResultArray:
+      tst.b R4 ; no more valid pushes left
+      jeq drawResult
+      pop R5 ; use R5 to just store the values from the stack now
+      dec R4
+      mov.b R5, RESULT_NUM(R6)
+      inc R6 
+      jmp fillResultArray
+
+
+; === Draws stored results on the screen. Assumes R9 contains the index
+; of the last whole num. Returns away to main. ===
+drawResult:
+      mov #0, R6 ; draw first-(n-1) digits
+      mov.b RESULT_NUM(R6), R5 
+      mov.b BIN_NUMS_H(R5), &0xA29
+      mov.b BIN_NUMS_L(R5), &0xA2A
+      
+      mov #1, R6 
+      mov.b RESULT_NUM(R6), R5 
+      mov.b BIN_NUMS_H(R5), &0xA25
+      mov.b BIN_NUMS_L(R5), &0xA26
+      
+      mov #2, R6 
+      mov.b RESULT_NUM(R6), R5 
+      mov.b BIN_NUMS_H(R5), &0xA23
+      mov.b BIN_NUMS_L(R5), &0xA24
+      
+      mov #3, R6 
+      mov.b RESULT_NUM(R6), R5 
+      mov.b BIN_NUMS_H(R5), &0xA32
+      mov.b BIN_NUMS_L(R5), &0xA33
+      
+      mov #4, R6 
+      mov.b RESULT_NUM(R6), R5 
+      mov.b BIN_NUMS_H(R5), &0xA2E
+      mov.b BIN_NUMS_L(R5), &0xA2F
+      
+      mov #5, R6 
+      mov.b RESULT_NUM(R6), R5 
+      mov.b BIN_NUMS_H(R5), &0xA27
+      mov.b BIN_NUMS_L(R5), &0xA28
+      
+      ; draw decimal in appropriate char
+      cmp #4, R9
+      jeq drawDecimalOn4
+      
+      cmp #3, R9 
+      jeq drawDecimalOn3
+      
+      cmp #2, R9 
+      jeq drawDecimalOn2
+      
+      cmp #1, R9 
+      jeq drawDecimalOn1
+      
+      cmp #0, R9
+      jeq drawDecimalOn0
+      
+      ret  ; don't draw on last segment
+
+; dot is the LSB
+drawDecimalOn4:
+      bis.b #BIT0, &0xA2F
+      ret  
+
+drawDecimalOn3:
+      bis.b #BIT0, &0xA33
+      ret  
+ 
+drawDecimalOn2:
+      bis.b #BIT0, &0xA24
+      ret  
+      
+drawDecimalOn1:
+      bis.b #BIT0, &0xA26
+      ret  
+
+drawDecimalOn0:
+      bis.b #BIT0, &0xA2A
+      ret 
+
+; ======== Program loop subroutines. Yariel Mercado 11/4/22 ========
+; ======== S1 loops to the start while S2 ends the program. ======== 
+endProgramCheck:
+        ; Check S1.1/2 button presses
+        mov.b &P1IN, R5     
+        and.b #00000110B, R5 ; bit mask on S1.1/2
+        cmp.b #00000100B, R5 ; if S1.1 is pressed
+        jeq endProgramCheckS1P1Debounce
+        cmp.b #00000010B, R5 ; if S1.2 is pressed
+        jeq endProgramCheckS1P2Debounce 
+        jmp endProgramCheck ; continue to cycle for input
+        
+endProgramCheckS1P1Debounce: 
+        call #S1P1Debounce
+        tst.b R5
+        jnz endProgramCheck
+        mov #2, &LCDCMEMCTL
+        ret ; return to main which naturally loops
+
+endProgramCheckS1P2Debounce: ; end the program
+        call #S1P2Debounce
+        tst.b R5
+        jnz endProgramCheck
+        mov #2, &LCDCMEMCTL
+        call #programEnd
+
+; ======== General multiplication subroutines. Yariel Mercado 11/3/22 ========
+; ======== R13 * R14 = R15 (ignores signs) ======== 
+multiplyNums:
+        mov #0, R15  ; stores result
+        push.w R10 ; stores original value of num being added
+        push.w R13 
+        push.w R14 
+        cmp R13, R14 ; R14 >= R13
+        mov R14, R10 
+        jhs addR14  ; add R14, R13 times
+        mov R13, R10
+        jmp addR13  ; add R13, R14 times
+
+addR13:
+        add R10, R13
+        dec R14
+        cmp #1, R14 ; stop adding when R14 == 1 (prevents an extra addition)
+        jne addR13
+        mov R13, R15 ; store result
+        jmp endMultiplication
+        
+addR14:
+        add R10, R14
+        dec R13
+        cmp #1, R13 ; prevent extra addition
+        jne addR14
+        mov R14, R15
+        jmp endMultiplication
+
+endMultiplication:
+        pop R14
+        pop R13
+        pop R10
+        ret
+        
+; ======== General division subroutines. Yariel Mercado 11/3/22 ========
+; ======== One iteration of: R13/R14 (ignores signs) ========     
+; ======== R13 stores remainder. R14 stores the quotient. ======== 
+; ======== NOTE: Only works when R13 > R14 
+;                which is ideal for this project. ========    
+divideRegisters:
+        push.w R10
+        mov #0, R10 ; quotient/counter, later moved into R14
+        jmp simpleDivision
+        
+simpleDivision: 
+        cmp R14, R13 ; if R13 < R14, division stops (R13 < 0)
+        jlo endDivision
+        sub R14, R13 ; R13 - R14 = R13
+        inc R10
+        jmp simpleDivision
+
+endDivision:
+        mov R10, R14 ; store the quotient
+        pop R10
         ret
 
 ; ======== Debounce subroutines. Yariel Mercado 10/28/22 ========

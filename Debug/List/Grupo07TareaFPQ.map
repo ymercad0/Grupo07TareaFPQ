@@ -2,7 +2,7 @@
 #                                                                              #
 #      IAR Universal Linker V6.6.2.104                                         #
 #                                                                              #
-#           Link time     =  03/Nov/2022  20:41:27                             #
+#           Link time     =  04/Nov/2022  15:19:11                             #
 #           Target CPU    =  MSP430                                            #
 #           List file     =  "C:\Users\Yariel Mercado\Desktop\Grupo07TareaFPQ\ #
 #                            Debug\List\Grupo07TareaFPQ.map"                   #
@@ -12,7 +12,7 @@
 #                            UBROF version 10.0.6                              #
 #                            Using library modules for C-SPY (-rt)             #
 #           Command line  =  -f                                                #
-#                            C:\Users\YARIEL~1\AppData\Local\Temp\EWE040.tmp   #
+#                            C:\Users\YARIEL~1\AppData\Local\Temp\EW2F3C.tmp   #
 #                            ("C:\Users\Yariel Mercado\Desktop\Grupo07TareaFPQ #
 #                            \Debug\Obj\asm.r43"                               #
 #                            -o                                                #
@@ -130,14 +130,14 @@ CSTACK
   Segment part 0. ROOT 
     -------------------------------------------------------------------------
 <CODE> 1 (was CODE)
-  Relative segment, address: 4400 - 65ED (0x21ee bytes), align: 1
+  Relative segment, address: 4400 - 681D (0x241e bytes), align: 1
   Segment part 1. ROOT        Intra module refs:   Absolute parts
            ENTRY                   ADDRESS         REF BY
            =====                   =======         ======
-           main                    60AC 
+           main                    60B2 
            LOCAL                   ADDRESS         
            =====                   =======         
-           init                    6064 
+           init                    606A 
            CHAR1_H                 6000 
            CHAR1_L                 6003 
            CHAR2_H                 6006 
@@ -167,85 +167,119 @@ CSTACK
            BIN_NUMS_L              605E 
            DEC_SYM_H               6060 
            DEC_SYM_L               6062 
-           UnlockGPIO              6068 
-           setupDisplayAndPorts    606C 
-           titleScreen             60D0 
-           namesState              6116 
-           signedScreen            61A6 
-           conversionScreen        6210 
-           numDigitsBits           628C 
-           numberSelection         6356 
-           programEnd              65EA 
-           titleScreenInput        60FA 
-           titleScreenDebounce     6106 
-           S1P1Debounce            65BE 
-           drawNames               611E 
-           resetNamesIndex         6174 
-           namesInput              6178 
+           RESULT_NUM              6064 
+           UnlockGPIO              606E 
+           setupDisplayAndPorts    6072 
+           titleScreen             60DE 
+           namesState              6124 
+           signedScreen            61B4 
+           conversionScreen        621E 
+           numDigitsBits           629A 
+           numberSelection         6364 
+           storeUnsignedDecimal    65C4 
+           endProgramCheck         6776 
+           titleScreenInput        6108 
+           titleScreenDebounce     6114 
+           S1P1Debounce            67EE 
+           drawNames               612C 
+           resetNamesIndex         6182 
+           namesInput              6186 
            namesInputS1P2Debounce
-                                   618A 
+                                   6198 
            namesInputS1P1Debounce
-                                   6194 
-           S1P2Debounce            65CC 
-           signedInput             61D2 
-           signedS1P1Debounce      61E4 
-           signedS1P2Debounce      61F8 
-           conversionInput         6242 
+                                   61A2 
+           S1P2Debounce            67FC 
+           signedInput             61E0 
+           signedS1P1Debounce      61F2 
+           signedS1P2Debounce      6206 
+           conversionInput         6250 
            conversionS1P1Debounce
-                                   6254 
+                                   6262 
            conversionS1P2Debounce
-                                   6268 
-           numDigits               62BC 
-           numBits                 62C4 
-           numDigitsInput          62CC 
-           numBitsInput            62DE 
-           numDigitsS1P1Debounce   62F0 
-           numDigitsS1P2Debounce   6306 
-           numBitsS1P1Debounce     631E 
-           numBitsS1P2Debounce     6332 
-           cycleBits               633E 
-           resetRegister           6352 
-           decimalCycle            6366 
-           binaryCycle             64AA 
-           overwriteDot            6392 
-           drawSign                63A2 
-           decimalInput            63B0 
-           drawDigit               6398 
+                                   6276 
+           numDigits               62CA 
+           numBits                 62D2 
+           numDigitsInput          62DA 
+           numBitsInput            62EC 
+           numDigitsS1P1Debounce   62FE 
+           numDigitsS1P2Debounce   6314 
+           numBitsS1P1Debounce     632C 
+           numBitsS1P2Debounce     6340 
+           cycleBits               634C 
+           resetRegister           6360 
+           decimalCycle            6372 
+           binaryCycle             64B2 
+           overwriteDot            639E 
+           drawSign                63AE 
+           decimalInput            63BC 
+           drawDigit               63A4 
            decSelectionS1P1Debounce
-                                   63C2 
+                                   63CE 
            decSelectionS1P2Debounce
-                                   63F6 
-           isItSigned              63E4 
-           finishSelection         63EA 
-           cycleHub                6400 
-           cycleDecimalSign        647E 
-           cycleDecimalNum0        641A 
-           cycleDecimalNum1        642E 
-           cycleDecimalNum2        6442 
-           cycleDecimalNum3        6456 
-           cycleDecimalNum4        646A 
-           resetDecArrayIndex      649E 
-           resetSignArrayIndex     6494 
-           signIndexReseter        649A 
-           decIndexReseter         64A6 
-           drawBinarySign          64D4 
-           binaryInput             64DA 
+                                   63FE 
+           isItSigned              63EE 
+           finishSelection         63F4 
+           cycleHub                6408 
+           cycleDecimalSign        6486 
+           cycleDecimalNum0        6422 
+           cycleDecimalNum1        6436 
+           cycleDecimalNum2        644A 
+           cycleDecimalNum3        645E 
+           cycleDecimalNum4        6472 
+           resetDecArrayIndex      64A6 
+           resetSignArrayIndex     649C 
+           signIndexReseter        64A2 
+           decIndexReseter         64AE 
+           drawBinarySign          64DC 
+           binaryInput             64E2 
            binSelectionS1P1Debounce
-                                   64EC 
+                                   64F4 
            binSelectionS1P2Debounce
-                                   6514 
-           finishBinSelection      6508 
-           binCycleHub             651E 
-           cycleBinaryNum0         653A 
-           cycleBinaryNum1         654E 
-           cycleBinaryNum2         6562 
-           cycleBinaryNum3         6576 
-           cycleBinaryNum4         658A 
-           cycleBinaryNum5         659E 
-           resetBinArrayIndex      65B4 
-           binIndexReseter         65BA 
-           delay                   65DA 
-           loop                    65E2 
+                                   651A 
+           finishBinSelection      650E 
+           binCycleHub             6524 
+           cycleBinaryNum0         6540 
+           cycleBinaryNum1         6554 
+           cycleBinaryNum2         6568 
+           cycleBinaryNum3         657C 
+           cycleBinaryNum4         6590 
+           cycleBinaryNum5         65A4 
+           resetBinArrayIndex      65BA 
+           binIndexReseter         65C0 
+           storeFractionalDecimal
+                                   65E0 
+           multiplyNums            67A6 
+           storeIntegerDecimal     6602 
+           endStoring              6622 
+           decToBin                662A 
+           convertIntToBin         6630 
+           divideRegisters         67D8 
+           endConversion           66B6 
+           fillFractionalSpots     664C 
+           fillBits                6658 
+           convertFracToBinSetup   6666 
+           convertFracToBin        6676 
+           extractHighBit          6694 
+           fillRemainingBits       66A8 
+           fillResultArray         66C0 
+           drawResult              66D0 
+           drawDecimalOn4          6758 
+           drawDecimalOn3          675E 
+           drawDecimalOn2          6764 
+           drawDecimalOn1          676A 
+           drawDecimalOn0          6770 
+           endProgramCheckS1P1Debounce
+                                   6788 
+           endProgramCheckS1P2Debounce
+                                   6796 
+           programEnd              681A 
+           addR14                  67C4 
+           addR13                  67B8 
+           endMultiplication       67D0 
+           simpleDivision          67DE 
+           endDivision             67E8 
+           delay                   680A 
+           loop                    6812 
 
 
 
@@ -260,7 +294,7 @@ CSTACK
 SEGMENT              SPACE    START ADDRESS   END ADDRESS     SIZE  TYPE  ALIGN
 =======              =====    =============   ===========     ====  ====  =====
 CSTACK                                 2360 - 23FF              A0   rel    1
-<CODE> 1                               4400 - 65ED            21EE   rel    1
+<CODE> 1                               4400 - 681D            241E   rel    1
                                        FFFE - FFFF               2  aseg  
 
                 ****************************************
@@ -269,7 +303,7 @@ CSTACK                                 2360 - 23FF              A0   rel    1
                 *                                      *
                 ****************************************
 
- 8 686 bytes of CODE memory (+ 2 absolute )
+ 9 246 bytes of CODE memory (+ 2 absolute )
    160 bytes of DATA memory
 
 Errors: none

@@ -5,51 +5,51 @@
     <configuration>
         <name>Debug</name>
         <outputs>
-            <file>$PROJ_DIR$\Debug\List\Grupo07TareaFPQ.map</file>
-            <file>$PROJ_DIR$\Debug\Exe\Grupo07TareaFPQ.d43</file>
-            <file>$PROJ_DIR$\asm.s43</file>
-            <file>$TOOLKIT_DIR$\config\linker\multiplier32.xcl</file>
             <file>$TOOLKIT_DIR$\inc\msp430.h</file>
+            <file>$PROJ_DIR$\asm.s43</file>
             <file>$TOOLKIT_DIR$\config\linker\lnk430fr6989.xcl</file>
             <file>$PROJ_DIR$\Debug\Obj\asm.r43</file>
+            <file>$PROJ_DIR$\Debug\Exe\Grupo07TareaFPQ.d43</file>
             <file>$TOOLKIT_DIR$\inc\msp430fr6989.h</file>
+            <file>$PROJ_DIR$\Debug\List\Grupo07TareaFPQ.map</file>
+            <file>$TOOLKIT_DIR$\config\linker\multiplier32.xcl</file>
         </outputs>
         <file>
             <name>[ROOT_NODE]</name>
             <outputs>
                 <tool>
                     <name>XLINK</name>
-                    <file> 1 0</file>
+                    <file> 4 6</file>
                 </tool>
             </outputs>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\Debug\Exe\Grupo07TareaFPQ.d43</name>
-            <outputs>
-                <tool>
-                    <name>XLINK</name>
-                    <file> 0</file>
-                </tool>
-            </outputs>
-            <inputs>
-                <tool>
-                    <name>XLINK</name>
-                    <file> 5 3 6</file>
-                </tool>
-            </inputs>
         </file>
         <file>
             <name>$PROJ_DIR$\asm.s43</name>
             <outputs>
                 <tool>
                     <name>A430</name>
-                    <file> 6</file>
+                    <file> 3</file>
                 </tool>
             </outputs>
             <inputs>
                 <tool>
                     <name>A430</name>
-                    <file> 4 7</file>
+                    <file> 0 5</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\Debug\Exe\Grupo07TareaFPQ.d43</name>
+            <outputs>
+                <tool>
+                    <name>XLINK</name>
+                    <file> 6</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>XLINK</name>
+                    <file> 2 7 3</file>
                 </tool>
             </inputs>
         </file>
