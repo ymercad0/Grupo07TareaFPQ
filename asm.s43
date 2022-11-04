@@ -66,14 +66,13 @@ DEC_SYM_H db 0x03, 0x03 ; + (POS), - (NEG)
 DEC_SYM_L db 0x50, 0x00
 
 ; ======== Notes on the registers ========
+; R4 : Stores the index of the display position
 ; R5 : For reading input/P1IN 
 ; R6 : Array index
 ; R7 : Stores S/N values
 ; R8 : Stores conversion values (D -> B)
 ; R9 : Stores #ofDigits or #ofBits (1-2 for D->B or 0-6 for B->D)
 ; R10: Delay counter
-; R4 : Stores the index of the display position
-; R11: Stores the index of the stored numbers array
 ; R12: Stores the sign of the stored number (if any)
 
 init:   MOV     #SFE(CSTACK), SP        ; set up stack
@@ -428,7 +427,6 @@ numberSelection:
         push.w R5
         push.w R6
         mov #0, R4
-        mov #0, R11
         mov #1, R6  ;index starts at 1 for the first value
         ; Selects whether to cycle through dec or bin nums. 0 == dec
         tst.b R8 
@@ -479,10 +477,10 @@ decSelectionS1P1Debounce:
         tst.b R5 
         jnz decimalInput
         dec R6 ; substract the index added with S1P2 to store exact value
-        mov R6, STORED_NUMBER(R11) ; save values and then index++
-        inc R11 ; We don't worry about the . because we verify the pos with R9
-        mov #0, R6 ;reset so that next number starts at zero
+        mov R6, STORED_NUMBER(R4) ; save values and then index++
+         ; We don't worry about the . because we verify the pos with R9
         inc R4 ; increment display position array index
+        mov #0, R6 ;reset so that next number starts at zero
         cmp.b #5, R4 ; if the next display is the leftmost,
         jeq isItSigned ;question if its signed
         cmp.b #6, R4 ; finish selection once everything is picked
@@ -611,10 +609,9 @@ binSelectionS1P1Debounce:
         tst.b R5 
         jnz binaryInput
         dec R6 ; substract the index added with S1P2 to store exact value
-        mov R6, STORED_NUMBER(R11) ; save values and then index++
-        inc R11 ; i++
-        mov #0, R6 ;reset so that next number starts at zero
+        mov R6, STORED_NUMBER(R4) ; save values and then index++
         inc R4 ; increment display position array index
+        mov #0, R6 ;reset so that next number starts at zero
         cmp.b #6, R4 ; if the current index is the MSB, finish
         jeq finishBinSelection ;finish selection
         jmp binCycleHub
