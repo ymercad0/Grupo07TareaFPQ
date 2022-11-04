@@ -65,8 +65,6 @@ BIN_NUMS_L db 0x00, 0x00
 DEC_SYM_H db 0x03, 0x03 ; + (POS), - (NEG)
 DEC_SYM_L db 0x50, 0x00
 
-BIN_SYM_L db 0x00, 0x04 ; (no sign), - (NEG)
-
 ; ======== Notes on the registers ========
 ; R5 : For reading input/P1IN 
 ; R6 : Array index
@@ -436,7 +434,7 @@ numberSelection:
         tst.b R8 
         jeq decimalCycle
         ; 1 == bin, only other option
-        ;jmp binaryCycle
+        jmp binaryCycle
         
 decimalCycle:
         mov.b #0xFC, &0xA25 ; 0 (most significant digit)
@@ -481,8 +479,7 @@ decSelectionS1P1Debounce:
         jnz decimalInput
         dec R6 ; substract the index added with S1P2 to store exact value
         mov R6, STORED_NUMBER(R11) ; save values and then index++
-        inc R11                    ; We don't worry about the dot because we
-        mov R6, R15 ; testing, delete later  ; verify the position with R9
+        inc R11 ; We don't worry about the . because we verify the pos with R9
         mov #0, R6 ;reset so that next number starts at zero
         inc R4 ; increment display position array index
         cmp.b #5, R4 ; if the next display is the leftmost,
@@ -492,7 +489,7 @@ decSelectionS1P1Debounce:
         jmp cycleHub
         
 isItSigned:
-        cmp.b #0, R7 ; if R7
+        cmp.b #0, R7 ; if R7 is 0, its signed, thus proceed
         jeq cycleDecimalSign
         jmp finishSelection ;if not signed, finish
         
@@ -582,17 +579,122 @@ resetDecArrayIndex:
                 mov #0, R6
         ret
         
-;binaryCycle:
-;        mov.b 0xFC, &0xA29 ; 0 (6th bit)
-;        mov.b 0xFC, &0xA25 ; 0 (5th bit)
-;        mov.b 0xFC, &0xA23 ; 0 (4th bit)
-;        mov.b 0xFC, &0xA32 ; 0 (3rd bit)
-;        mov.b 0xFC, &0xA2E ; 0 (2nd bit)
-;        mov.b 0xFC, &0xA27 ; 0 (1st bit)
+binaryCycle:
+        mov.b #0xFC, &0xA29 ; 0 (6th bit)
+        mov.b #0xFC, &0xA25 ; 0 (5th bit)
+        mov.b #0xFC, &0xA23 ; 0 (4th bit)
+        mov.b #0xFC, &0xA32 ; 0 (3rd bit)
+        mov.b #0xFC, &0xA2E ; 0 (2nd bit)
+        mov.b #0xFC, &0xA27 ; 0 (1st bit)
+        cmp.b #0 ,R7 ; if the user selected sign
+        jeq drawBinarySign ; draw sign, else leave space empty
+        jmp binaryInput
+        
+drawBinarySign:
+        mov.b #0x00, &0xA2A;  no sign (positive sign) default
+        jmp binaryInput
 
-;              0      1      2      3      4      5     
-;POSITION_H 0xA27, 0xA2E, 0xA32, 0xA23, 0xA25, 0xA29 Right to Left
-;POSITION_L 0xA28, 0xA2F, 0xA33, 0xA24, 0xA26, 0xA2A
+binaryInput:
+        ; Check S1.1/2 button presses
+        mov.b &P1IN, R5     
+        and.b #00000110B, R5 ; bit mask on S1.1/2
+        cmp.b #00000100B, R5 ; if S1.1 is pressed
+        jeq binSelectionS1P1Debounce
+        cmp.b #00000010B, R5 ; if S1.2 is pressed
+        jeq binSelectionS1P2Debounce
+        jmp binaryInput ; continue to cycle for input
+        
+binSelectionS1P1Debounce:
+        ; Confirms the binary number selection
+        call #S1P1Debounce
+        tst.b R5 
+        jnz binaryInput
+        dec R6 ; substract the index added with S1P2 to store exact value
+        mov R6, STORED_NUMBER(R11) ; save values and then index++
+        inc R11 ; i++
+        mov #0, R6 ;reset so that next number starts at zero
+        inc R4 ; increment display position array index
+        cmp.b #6, R4 ; if the current index is the MSB, finish
+        jeq finishBinSelection ;finish selection
+        jmp binCycleHub
+        
+finishBinSelection:
+        pop R6 
+        pop R5
+        pop R4
+        mov #2, &LCDCMEMCTL
+        ret
+        
+binSelectionS1P2Debounce:
+        call #S1P2Debounce 
+        tst.b R5 
+        jnz binaryInput
+        jmp binCycleHub   
+
+binCycleHub:
+        cmp.b #0, R4
+        jeq cycleBinaryNum0
+        cmp.b #1, R4
+        jeq cycleBinaryNum1
+        cmp.b #2, R4
+        jeq cycleBinaryNum2
+        cmp.b #3, R4
+        jeq cycleBinaryNum3
+        cmp.b #4, R4
+        jeq cycleBinaryNum4
+        cmp.b #5, R4
+        jeq cycleBinaryNum5
+
+cycleBinaryNum0:
+        call #resetBinArrayIndex
+        mov.b BIN_NUMS_H(R6), &0xA27
+        mov.b BIN_NUMS_L(R6), &0xA28
+        inc R6
+        jmp binaryInput ; continue to read from input
+
+cycleBinaryNum1:
+        call #resetBinArrayIndex
+        mov.b BIN_NUMS_H(R6), &0xA2E
+        mov.b BIN_NUMS_L(R6), &0xA2F
+        inc R6
+        jmp binaryInput ; continue to read from input
+
+cycleBinaryNum2:
+        call #resetBinArrayIndex
+        mov.b BIN_NUMS_H(R6), &0xA32
+        mov.b BIN_NUMS_L(R6), &0xA33
+        inc R6
+        jmp binaryInput ; continue to read from input
+
+cycleBinaryNum3:
+        call #resetBinArrayIndex
+        mov.b BIN_NUMS_H(R6), &0xA23
+        mov.b BIN_NUMS_L(R6), &0xA24
+        inc R6
+        jmp binaryInput ; continue to read from input
+
+cycleBinaryNum4:
+        call #resetBinArrayIndex
+        mov.b BIN_NUMS_H(R6), &0xA25
+        mov.b BIN_NUMS_L(R6), &0xA26
+        inc R6
+        jmp binaryInput ; continue to read from input
+
+cycleBinaryNum5:
+        call #resetBinArrayIndex
+        mov.b BIN_NUMS_H(R6), &0xA29
+        mov.b BIN_NUMS_L(R6), &0xA2A
+        mov R6, R12 ; if MSB is 0 == positive, if MSB is 1 == negative
+        inc R6
+        jmp binaryInput ; continue to read from input
+
+resetBinArrayIndex:
+        cmp.b #2, R6 ; if R6 == 2, reset to 0 because the last index is 1
+        jeq binIndexReseter
+        ret
+        binIndexReseter:
+                mov #0, R6
+        ret
 
 ; ======== Debounce subroutines. Yariel Mercado 10/28/22 ========
 ; ======== General delay subroutines for the individual buttons ========
