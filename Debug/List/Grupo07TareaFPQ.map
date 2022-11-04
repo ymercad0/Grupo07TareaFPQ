@@ -2,7 +2,7 @@
 #                                                                              #
 #      IAR Universal Linker V6.6.2.104                                         #
 #                                                                              #
-#           Link time     =  04/Nov/2022  15:19:11                             #
+#           Link time     =  04/Nov/2022  16:03:42                             #
 #           Target CPU    =  MSP430                                            #
 #           List file     =  "C:\Users\Yariel Mercado\Desktop\Grupo07TareaFPQ\ #
 #                            Debug\List\Grupo07TareaFPQ.map"                   #
@@ -12,7 +12,7 @@
 #                            UBROF version 10.0.6                              #
 #                            Using library modules for C-SPY (-rt)             #
 #           Command line  =  -f                                                #
-#                            C:\Users\YARIEL~1\AppData\Local\Temp\EW2F3C.tmp   #
+#                            C:\Users\YARIEL~1\AppData\Local\Temp\EWFB29.tmp   #
 #                            ("C:\Users\Yariel Mercado\Desktop\Grupo07TareaFPQ #
 #                            \Debug\Obj\asm.r43"                               #
 #                            -o                                                #
@@ -130,7 +130,7 @@ CSTACK
   Segment part 0. ROOT 
     -------------------------------------------------------------------------
 <CODE> 1 (was CODE)
-  Relative segment, address: 4400 - 681D (0x241e bytes), align: 1
+  Relative segment, address: 4400 - 687F (0x2480 bytes), align: 1
   Segment part 1. ROOT        Intra module refs:   Absolute parts
            ENTRY                   ADDRESS         REF BY
            =====                   =======         ======
@@ -176,11 +176,11 @@ CSTACK
            conversionScreen        621E 
            numDigitsBits           629A 
            numberSelection         6364 
-           storeUnsignedDecimal    65C4 
-           endProgramCheck         6776 
+           selectConversion        65C2 
+           endProgramCheck         67B8 
            titleScreenInput        6108 
            titleScreenDebounce     6114 
-           S1P1Debounce            67EE 
+           S1P1Debounce            6830 
            drawNames               612C 
            resetNamesIndex         6182 
            namesInput              6186 
@@ -188,7 +188,7 @@ CSTACK
                                    6198 
            namesInputS1P1Debounce
                                    61A2 
-           S1P2Debounce            67FC 
+           S1P2Debounce            683E 
            signedInput             61E0 
            signedS1P1Debounce      61F2 
            signedS1P2Debounce      6206 
@@ -235,51 +235,54 @@ CSTACK
            binSelectionS1P1Debounce
                                    64F4 
            binSelectionS1P2Debounce
-                                   651A 
+                                   6518 
            finishBinSelection      650E 
-           binCycleHub             6524 
-           cycleBinaryNum0         6540 
-           cycleBinaryNum1         6554 
-           cycleBinaryNum2         6568 
-           cycleBinaryNum3         657C 
-           cycleBinaryNum4         6590 
-           cycleBinaryNum5         65A4 
-           resetBinArrayIndex      65BA 
-           binIndexReseter         65C0 
+           binCycleHub             6522 
+           cycleBinaryNum0         653E 
+           cycleBinaryNum1         6552 
+           cycleBinaryNum2         6566 
+           cycleBinaryNum3         657A 
+           cycleBinaryNum4         658E 
+           cycleBinaryNum5         65A2 
+           resetBinArrayIndex      65B8 
+           binIndexReseter         65BE 
+           storeDecimal            6606 
+           binToDec                65C8 
            storeFractionalDecimal
-                                   65E0 
-           multiplyNums            67A6 
-           storeIntegerDecimal     6602 
-           endStoring              6622 
-           decToBin                662A 
-           convertIntToBin         6630 
-           divideRegisters         67D8 
-           endConversion           66B6 
-           fillFractionalSpots     664C 
-           fillBits                6658 
-           convertFracToBinSetup   6666 
-           convertFracToBin        6676 
-           extractHighBit          6694 
-           fillRemainingBits       66A8 
-           fillResultArray         66C0 
-           drawResult              66D0 
-           drawDecimalOn4          6758 
-           drawDecimalOn3          675E 
-           drawDecimalOn2          6764 
-           drawDecimalOn1          676A 
-           drawDecimalOn0          6770 
+                                   6622 
+           multiplyNums            67E8 
+           storeIntegerDecimal     6644 
+           endStoring              6664 
+           decToBin                666C 
+           convertIntToBin         6672 
+           divideRegisters         681A 
+           endConversion           66F8 
+           fillFractionalSpots     668E 
+           fillBits                669A 
+           convertFracToBinSetup   66A8 
+           convertFracToBin        66B8 
+           extractHighBit          66D6 
+           fillRemainingBits       66EA 
+           fillResultArray         6702 
+           drawResult              6712 
+           drawDecimalOn4          679A 
+           drawDecimalOn3          67A0 
+           drawDecimalOn2          67A6 
+           drawDecimalOn1          67AC 
+           drawDecimalOn0          67B2 
            endProgramCheckS1P1Debounce
-                                   6788 
+                                   67CA 
            endProgramCheckS1P2Debounce
-                                   6796 
-           programEnd              681A 
-           addR14                  67C4 
-           addR13                  67B8 
-           endMultiplication       67D0 
-           simpleDivision          67DE 
-           endDivision             67E8 
-           delay                   680A 
-           loop                    6812 
+                                   67D8 
+           drawProgramEnd          685C 
+           addR14                  6806 
+           addR13                  67FA 
+           endMultiplication       6812 
+           simpleDivision          6820 
+           endDivision             682A 
+           delay                   684C 
+           loop                    6854 
+           programEnd              687C 
 
 
 
@@ -294,7 +297,7 @@ CSTACK
 SEGMENT              SPACE    START ADDRESS   END ADDRESS     SIZE  TYPE  ALIGN
 =======              =====    =============   ===========     ====  ====  =====
 CSTACK                                 2360 - 23FF              A0   rel    1
-<CODE> 1                               4400 - 681D            241E   rel    1
+<CODE> 1                               4400 - 687F            2480   rel    1
                                        FFFE - FFFF               2  aseg  
 
                 ****************************************
@@ -303,7 +306,7 @@ CSTACK                                 2360 - 23FF              A0   rel    1
                 *                                      *
                 ****************************************
 
- 9 246 bytes of CODE memory (+ 2 absolute )
+ 9 344 bytes of CODE memory (+ 2 absolute )
    160 bytes of DATA memory
 
 Errors: none

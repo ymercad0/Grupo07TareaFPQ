@@ -120,7 +120,7 @@ main:   NOP                             ; main program
         call #conversionScreen
         call #numDigitsBits
         call #numberSelection
-        call #storeUnsignedDecimal
+        call #selectConversion
         call #endProgramCheck
         call #main ; naturally loops
 
@@ -129,7 +129,7 @@ main:   NOP                             ; main program
 ; ======== Draws the title screen and waits for S1.1 input to proceed ========
 ; F(P.Q)
 titleScreen: 
-        mov.b #0x8E, &0xA29 ; F 
+        mov.b #0x8E, &0xA29 ; E
         mov.b #0x22, &0xA26 ; (
         mov.b #0xCF, &0xA23 ; P
         mov.b #0x01, &0xA24 ; .
@@ -630,7 +630,6 @@ binSelectionS1P1Debounce:
 finishBinSelection:
         pop R6 
         pop R5
-        pop R4
         mov #2, &LCDCMEMCTL
         ret
         
@@ -708,11 +707,35 @@ binIndexReseter:
         
 ; ======== Conversion subroutines. Yariel Mercado 11/3/22-11/4/22 ========
 ; ======== Converts the user input to the desired format. Displays it. ========    
+selectConversion: ; verify whether the user picked D -> B or B -> D
+        tst.b R8 ; D->B selected
+        jz storeDecimal
+        jmp binToDec
 
+; Binary to decimal
+binToDec:
+        mov.b #0x60, &0xA29
+        mov.b #0x00, &0xA2A
+      
+        mov.b #0xDB, &0xA25
+        mov.b #0x00, &0xA26
+      
+        mov.b #0xF1, &0xA23
+        mov.b #0x00, &0xA24
+      
+        mov.b #0x67, &0xA32
+        mov.b #0x01, &0xA33
+      
+        mov.b #0xB7, &0xA2E
+        mov.b #0x00, &0xA2F
+      
+        mov.b #0xBF, &0xA27
+        mov.b #0x00, &0xA28
+        ret
 
 ; Unsigned decimal subroutines. Certain registers aren't needed after
 ; we jump to the subroutine that handles the users choice (one for each). 
-storeUnsignedDecimal:      ; Stores int part into R8. Converts from the array.     
+storeDecimal:      ; Stores int part into R8. Converts from the array.     
                    ; Store fractional part into R12
         push.w R6  ; index of the array
         push.w R10 ; factor
@@ -967,7 +990,7 @@ endProgramCheckS1P2Debounce: ; end the program
         tst.b R5
         jnz endProgramCheck
         mov #2, &LCDCMEMCTL
-        call #programEnd
+        call #drawProgramEnd
 
 ; ======== General multiplication subroutines. Yariel Mercado 11/3/22 ========
 ; ======== R13 * R14 = R15 (ignores signs) ======== 
@@ -1059,7 +1082,17 @@ loop:
         pop R10 
         ret ; returns to whatever subroutine the delay was called from
 
-; End loop for the program
+; ======== Program end subroutine. Yariel Mercado 11/4/22 ========
+; ======== Draws 'END' and goes to the end loop. ========
+; ======== Lets the user know the program has ended and not bugged out. ========
+drawProgramEnd:
+        mov.b #0x9F, &0xA32 ; E
+        mov.b #0x6C, &0xA2E ; N (vertical bars)
+        mov.b #0x82, &0xA2F ; N (diagonal part) 
+        mov.b #0xF0, &0xA27 ; D
+        mov.b #0x50, &0xA28
+        jmp programEnd
+        
 programEnd:
         JMP $                           ; jump to current location '$'
                                         ; (endless loop)
