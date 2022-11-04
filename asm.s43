@@ -705,7 +705,8 @@ binIndexReseter:
         mov #0, R6
         ret
         
-; ======== Conversion subroutines. Yariel Mercado 11/3/22-11/4/22 ========
+; ======== Conversion subroutines (all of the below tags) ========
+; ======== Yariel Mercado 11/3/22-11/4/22 ========
 ; ======== Converts the user input to the desired format. Displays it. ========    
 selectConversion: ; verify whether the user picked D -> B or B -> D
         tst.b R8 ; D->B selected
