@@ -2,7 +2,7 @@
 
         NAME    main                    ; module name
 
-        PUBLIC  main                    ; make the main label vissible
+        PUBLIC  main                    ; make the main label visible
                                         ; outside this module
         ORG     0FFFEh
         DC16    init                    ; set reset vector to 'init' label
@@ -13,7 +13,7 @@
 
 ; ======== Variable/array directives ========
 ; ==== Team names ====
-; The names' characters are stored with a HB and LB. 6 arrays to accomodate
+; The names' characters are stored with a HB and LB. 6 arrays to accommodate
 ; the 6 segments. 3 array entries for the 3 names. Values read vertically. 
 CHAR1_H db 0x1C, 0xEF, 0x00 ; L, A, Y
 CHAR1_L db 0x00, 0x00, 0xB0
@@ -44,11 +44,11 @@ CONVERSION_CHAR1_L db 0x50, 0x50
 CONVERSION_CHAR2_H db 0xF1, 0xF0 ; B + ? (dot), D + ? (dot)  
 CONVERSION_CHAR2_L db 0x51, 0x51
 
-; ==== #of Digits (If D->B was choosen) ==== 
+; ==== #of Digits (If D->B was chosen) ==== 
 DIGITS_H db 0x60, 0xDB ; 1, 2
 DIGITS_L db 0x00, 0x00
 
-; ==== #of Bits (If B->D was choosen) ==== 
+; ==== #of Bits (If B->D was chosen) ==== 
 BITS_H db 0xFC, 0x60, 0xDB, 0xF1, 0x67, 0xB7, 0xBF ; 0,1, 2, 3, 4, 5, 6
 BITS_L db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 
@@ -87,7 +87,7 @@ init:   MOV     #SFE(CSTACK), SP        ; set up stack
 
 
 UnlockGPIO:                             ; Disable de GPIO power-on default
-        bic.w   #LOCKLPM5,&PM5CTL0      ; high-impedance mode to activade
+        bic.w   #LOCKLPM5,&PM5CTL0      ; high-impedance mode to activate
                                         ; previously configured port settings
 
 ; ======== Ports and LCD setup. Yariel Mercado 10/27/22 ========
@@ -125,11 +125,13 @@ main:   NOP                             ; main program
         call #main ; naturally loops
 
 
-; ======== Title Screen subroutines. Yariel Mercado 10/27/22 ========
-; ======== Draws the title screen and waits for S1.1 input to proceed ========
+; === Title Screen subroutines.  ===
+; === Objective: Draws the title screen and waits for S1.1 input to proceed ===
+; === Author: Yariel Mercado ====
+; === Date: 10/27/22 ===
 ; F(P.Q)
 titleScreen: 
-        mov.b #0x8E, &0xA29 ; E
+        mov.b #0x8E, &0xA29 ; F
         mov.b #0x22, &0xA26 ; (
         mov.b #0xCF, &0xA23 ; P
         mov.b #0x01, &0xA24 ; .
@@ -149,15 +151,17 @@ titleScreenInput:
 
 titleScreenDebounce:            
         call #S1P1Debounce
-        tst.b R5 ; 0 if debounce was succesful
+        tst.b R5 ; 0 if debounce was successful
         jnz titleScreenInput ; continue to look for valid button presses
         pop R5
         mov #2, &LCDCMEMCTL  ; clear screen
-        ret                  ; succesfully processed button input, back to main
+        ret                  ; successfully processed button input, back to main
 
-; ======== Name Screen subroutines. Yariel Mercado 10/28/22 ========
-; ======== Draws the names of the team members. ========
-; ======== S1.1 ends this subroutine. S1.2 advances to the next name. ========
+; === Name Screen subroutines. ===
+; === Objective: Draws the names of the team members. ===
+; === S1.1 ends this subroutine. S1.2 advances to the next name. ===
+; === Author: Yariel Mercado ===
+; === Date: 10/28/22 ===
 namesState: ; initialize the names loop state
         push.w R5 ; always used to read button states
         push.w R6
@@ -206,13 +210,13 @@ namesInput:
         
 namesInputS1P2Debounce:  ; S1.2 debouncing
         call #S1P2Debounce
-        tst.b R5 ; 0 if debounce was succesful
+        tst.b R5 ; 0 if debounce was successful
         jnz namesInput 
         jmp drawNames ; draw the next name if S2 was pressed
 
 namesInputS1P1Debounce:  ; S1.1 debouncing, ends the names subroutines
         call #S1P1Debounce
-        tst.b R5 ; 0 if debounce was succesful
+        tst.b R5 ; 0 if debounce was successful
         jnz namesInput 
         ; end the names subroutine, restore register values
         pop R6
@@ -220,10 +224,13 @@ namesInputS1P1Debounce:  ; S1.1 debouncing, ends the names subroutines
         mov #2, &LCDCMEMCTL
         ret  ; return to main
 
-; ======== Signed Screen subroutines. ========
-; ======== Yariel Mercado & Anthony Mendez 10/28/22-10/31/22 ========
-; ======== Selects signed or unsigned operations ========
-; ======== S1.1 accepts an option while S1.2 cycles between them. ========
+; ===== Signed Screen subroutines. =====
+; ===== Objective: Selects signed or unsigned operations =====
+; ===== S1.1 accepts an option while S1.2 cycles between them. =====
+; ===== Postconditions: R7 stores 0 if the user selects signed, 1 if not =====
+; ===== Authors: Yariel Mercado & Anthony Mendez ===== 
+; ===== Dates: 10/28/22-10/31/22 =====
+
 signedScreen:
         mov.b #0xB7, &0xA29 ; S
         mov.b #0x28, &0xA26 ; /
@@ -246,13 +253,13 @@ signedInput:
         jeq signedS1P2Debounce
         jmp signedInput ; continue to cycle for input
 
-signedS1P1Debounce: ; selects the users option and ends signed input routines
+signedS1P1Debounce: ; selects the user's option and ends signed input routines
         call #S1P1Debounce
         tst.b R5 
         jnz signedInput
-        ; NOTE: THE USERS CHOICE FOR S/N IS STORED IN R7
+        ; NOTE: THE USER'S CHOICE FOR S/N IS STORED IN R7
         ; 0 == SIGNED, 1 == UNSIGNED
-        mov R6, R7  ; store the users option
+        mov R6, R7  ; store the user's option
         pop R6 
         pop R5
         mov #2, &LCDCMEMCTL
@@ -262,23 +269,26 @@ signedS1P2Debounce:
         call #S1P2Debounce 
         tst.b R5 
         jnz signedInput
-        ; flip user option if processed succesfully
+        ; flip user option if processed successfully
         xor.b #BIT0, R6 ; toggle LSB to flip between the options
         ; draws the user option
         mov.b S_OPTION_H(R6), &0xA27 ; signed option High/Low byte
         mov.b S_OPTION_L(R6), &0xA28
         jmp signedInput ; continue to read from input
 
-; ===== Conversion Screen subroutines. =====
-; ===== Luis D. Gonzalez & Anthony Mendez 10/28/2022-11/1/2022 =====
-; ===== Selects D->B or B->D conversion =====
-; ===== S1.1 accepts conversion, while S1.2 cycles between them. =====
+; ==== Conversion Screen subroutines. ====
+; ==== Objective: Selects D->B or B->D conversion ====
+; ==== S1.1 accepts conversion, while S1.2 cycles between them. ====
+; ==== Postconditions: R8 stores 0 if D->B is chosen, 1 if B->D is chosen ====
+; ==== Authors: Luis D. Gonzalez & Anthony Mendez ====
+; ==== Dates: 10/28/2022-11/1/2022 ====
+
 conversionScreen:
-        mov.b #0xF0, &0xA29 ; D (outter bars) [default option]
+        mov.b #0xF0, &0xA29 ; D (outer bars) [default option]
         mov.b #0x50, &0xA2A ; D (inner bars) [default option]
         mov.b #0x03, &0xA25 ; -
         mov.b #0x88, &0xA24 ; >
-        mov.b #0xF1, &0xA32 ; B (outter bars) [default option]
+        mov.b #0xF1, &0xA32 ; B (outer bars) [default option]
         bis.b #0x51, &0xA33 ; B (inner bars) [default option] + ? (dot)
         mov.b #0xCB, &0xA2E ; ? (shape)
         push.w R5
@@ -297,13 +307,13 @@ conversionInput:
         jmp conversionInput ; continue to cycle for input
 
 conversionS1P1Debounce: 
-        ; selects the users option and ends conversion input routines
+        ; selects the user's option and ends conversion input routines
         call #S1P1Debounce
         tst.b R5 
         jnz conversionInput
-        ; NOTE: THE USERS CHOICE FOR D->B / B->D IS STORED IN R8
+        ; NOTE: THE USER'S CHOICE FOR D->B / B->D IS STORED IN R8
         ; 0 == D->B , 1 == B->D
-        mov R6, R8  ; store the users option
+        mov R6, R8  ; store the user's option
         pop R6 
         pop R5
         mov #2, &LCDCMEMCTL
@@ -313,7 +323,7 @@ conversionS1P2Debounce:
         call #S1P2Debounce 
         tst.b R5 
         jnz conversionInput
-        ; flip user option if processed succesfully
+        ; flip user option if processed successfully
         xor.b #BIT0, R6 ; toggle LSB to flip between the conversions
         ; draws the conversion
         mov.b CONVERSION_CHAR1_H(R6), &0xA29 ; "From" High/Low
@@ -323,14 +333,18 @@ conversionS1P2Debounce:
         jmp conversionInput ; continue to read from input
 
 ; ===== Number of Digits/Bits subroutines. =====
-; ===== Luis D. Gonzalez 11/1/2022 =====
-; ===== Selects 1 or 2 digits between 0-9 (D->B) =====
+; ===== Objective Selects 1 or 2 digits between 0-9 (D->B) =====
 ; ===== Selects 0-6 between 0-1 (B->D) =====
+; ===== Preconditions: R8 stores the selected conversion value =====
+; ===== Postconditions: R9 stores either the bits or digits selected =====
+; ===== Author: Luis D. Gonzalez =====
+; ===== Date: 11/1/2022 =====
+
 numDigitsBits:
-        mov.b #0x6C, &0xA29 ; N (outter bars)
+        mov.b #0x6C, &0xA29 ; N (outer bars)
         mov.b #0x82, &0xA2A ; N (inner bars)
         mov.b #0x7C, &0xA25 ; U
-        mov.b #0x6C, &0xA23 ; M (outter bars)
+        mov.b #0x6C, &0xA23 ; M (outer bars)
         mov.b #0xA1, &0xA24 ; M (inner bars) + ? (dot)
         mov.b #0xCB, &0xA32 ; ? (shape)
         push.w R5
@@ -344,7 +358,7 @@ numDigitsBits:
 
 numDigits:
         ; if user chooses D->B conversion
-        mov.b #0x60, &0xA27 ; 1 (outter bars)
+        mov.b #0x60, &0xA27 ; 1 (outer bars)
         jmp numDigitsInput
         
 numBits:
@@ -373,14 +387,14 @@ numBitsInput:
         jmp numBitsInput ; continue to cycle for input
 
 numDigitsS1P1Debounce:
-        ; selects the users option and ends conversion input routines
+        ; selects the user's option and ends conversion input routines
         call #S1P1Debounce
         tst.b R5 
         jnz numDigitsInput
-        ; NOTE: THE USERS CHOICE FOR #ofDigits IS STORED IN R9 (1 or 2)
+        ; NOTE: THE USER'S CHOICE FOR #ofDigits IS STORED IN R9 (1 or 2)
         inc R6 ; since R6 is an index, it'll be 0 or 1. Increment to match
                ; user option
-        mov R6, R9  ; store the users option
+        mov R6, R9  ; store the user's option
         pop R6 
         pop R5
         mov #2, &LCDCMEMCTL
@@ -390,7 +404,7 @@ numDigitsS1P2Debounce:
         call #S1P2Debounce 
         tst.b R5 
         jnz numDigitsInput
-        ; flip user option if processed succesfully
+        ; flip user option if processed successfully
         xor.b #BIT0, R6 ; toggle LSB to flip between the digit numbers
         ; draws the digit number
         mov.b DIGITS_H(R6), &0xA27 ; Flips between one and two
@@ -398,12 +412,12 @@ numDigitsS1P2Debounce:
         jmp numDigitsInput ; continue to read from input
         
 numBitsS1P1Debounce:
-        ; selects the users option and ends conversion input routines
+        ; selects the user's option and ends conversion input routines
         call #S1P1Debounce
         tst.b R5 
         jnz numBitsInput
-        ; NOTE: THE USERS CHOICE FOR #ofBits IS STORED IN R9 (0-6)
-        mov R6, R9  ; store the users option (options here match indexes)
+        ; NOTE: THE USER'S CHOICE FOR #ofBits IS STORED IN R9 (0-6)
+        mov R6, R9  ; store the user's option (options here match indexes)
         pop R6 
         pop R5
         mov #2, &LCDCMEMCTL
@@ -428,11 +442,17 @@ resetRegister:
         mov #0, R6
         jmp cycleBits
         
-; ===== Number selection subroutines. =====
-; ===== Anthony Mendez 11/2/2022-11/3/2022 =====
-; ===== Selects the number to be converted (from right to left) =====
-; ===== S1.1 confirms selection; S1.2 cycles numbers. =====
-; ===== For D->B, the leftmost segment will show sign if selected in S/N?=====
+; === Number selection subroutines. ===
+; === Objective: Selects the number to be converted (from right to left) ===
+; === S1.1 confirms selection; S1.2 cycles numbers. ===
+; === For D->B, the leftmost segment will show sign if selected in S/N? ===
+; === Preconditions: R8 stores the selected conversion value ===
+; ===                R7 stores if the user selects signed or not ===
+; === Postconditions: STORED_NUMBER stores the selected number ===
+; ===                 R12 Stores the sign of the stored number (if any) ===
+; === Author: Anthony Mendez ===
+; === Dates: 11/2/2022-11/3/2022 ===
+
 numberSelection:
         push.w R5
         push.w R6
@@ -705,9 +725,12 @@ binIndexReseter:
         mov #0, R6
         ret
         
-; ======== Conversion subroutines (all of the below tags) ========
-; ======== Yariel Mercado 11/3/22-11/4/22 ========
-; ======== Converts the user input to the desired format. Displays it. ========    
+; === Conversion subroutines (tags below) ===
+; === Objective: Converts the user input to the desired format, Displays it. ===
+; === Preconditions: STORED_NUMBER stores the selected number ===
+; === Author: Yariel Mercado ===
+; === Dates: 11/3/22-11/4/22 ===
+
 selectConversion: ; verify whether the user picked D -> B or B -> D
         tst.b R8 ; D->B selected
         jz storeDecimal
@@ -735,7 +758,7 @@ binToDec:
         ret
 
 ; Unsigned decimal subroutines. Certain registers aren't needed after
-; we jump to the subroutine that handles the users choice (one for each). 
+; we jump to the subroutine that handles the user's choice (one for each). 
 storeDecimal:      ; Stores int part into R8. Converts from the array.     
                    ; Store fractional part into R12
         push.w R6  ; index of the array
@@ -967,8 +990,10 @@ drawDecimalOn0:
       bis.b #BIT0, &0xA2A
       ret 
 
-; ======== Program loop subroutines. Yariel Mercado 11/4/22 ========
-; ======== S1 loops to the start while S2 ends the program. ======== 
+; ===== Program loop subroutines. =====
+; ===== Objective: S1 loops to the start while S2 ends the program. =====
+; ===== Author: Yariel Mercado =====
+; ===== Date: 11/4/22 =====
 endProgramCheck:
         ; Check S1.1/2 button presses
         mov.b &P1IN, R5     
@@ -993,8 +1018,11 @@ endProgramCheckS1P2Debounce: ; end the program
         mov #2, &LCDCMEMCTL
         call #drawProgramEnd
 
-; ======== General multiplication subroutines. Yariel Mercado 11/3/22 ========
-; ======== R13 * R14 = R15 (ignores signs) ======== 
+; ===== General multiplication subroutines. =====
+; ===== Objective: R13 * R14 = R15 (ignores signs) =====
+; ===== Postconditions: R15 stores result
+; ===== Author: Yariel Mercado =====
+; ===== Date: 11/3/22 =====
 multiplyNums:
         mov #0, R15  ; stores result
         push.w R10 ; stores original value of num being added
@@ -1028,11 +1056,13 @@ endMultiplication:
         pop R10
         ret
         
-; ======== General division subroutines. Yariel Mercado 11/3/22 ========
-; ======== One iteration of: R13/R14 (ignores signs) ========     
-; ======== R13 stores remainder. R14 stores the quotient. ======== 
+; ======== General division subroutines.  ========
+; ======== Objective: One iteration of: R13/R14 (ignores signs) ========     
 ; ======== NOTE: Only works when R13 > R14 
-;                which is ideal for this project. ========    
+; ========       which is ideal for this project. ========    
+; ======== Postcondition: R13 stores remainder. R14 stores the quotient. ======
+; ======== Author: Yariel Mercado ========
+; ======== Date: 11/3/22 ========
 divideRegisters:
         push.w R10
         mov #0, R10 ; quotient/counter, later moved into R14
@@ -1050,11 +1080,13 @@ endDivision:
         pop R10
         ret
 
-; ======== Debounce subroutines. Yariel Mercado 10/28/22 ========
-; ======== General delay subroutines for the individual buttons ========
+; ===== Debounce subroutines. =====
+; ===== Objective: General delay subroutines for the individual buttons =====
 ; Note: R5 should always be used to check for pin states and this register's 
 ;       value should be preserved and handled by the subroutine calling the
 ;       debouncing. 
+; ===== Author: Yariel Mercado =====
+; ===== Date: 10/28/22 =====
 S1P1Debounce: ; S1 Pin 1
         call #delay ; debouncing
         mov.b &P1IN, R5 ; recheck P1.1 value to check if it was really pressed
@@ -1070,8 +1102,10 @@ S1P2Debounce: ; S1 Pin 2
         sub.b #00000100B, R5 
         ret
 
-; ======== Delay subroutines. Yariel Mercado 10/27/22 ========
-; ======== Decrements from a large value to stall for time. ========
+; ======== Delay subroutines. ========
+; ======== Objective: Decrements from a large value to stall for time. ========
+; ======== Author: Yariel Mercado ========
+; ======== Date: 10/27/22 ========
 delay:
         push.w R10 ; store original value
         mov #0xFF, R10
@@ -1083,9 +1117,11 @@ loop:
         pop R10 
         ret ; returns to whatever subroutine the delay was called from
 
-; ======== Program end subroutine. Yariel Mercado 11/4/22 ========
-; ======== Draws 'END' and goes to the end loop. ========
+; ======== Program end subroutine. ========
+; ======== Objective: Draws 'END' and goes to the end loop. ========
 ; ======== Lets the user know the program has ended and not bugged out. ========
+; ======== Author: Yariel Mercado ========
+; ======== Date: 11/4/22 ========
 drawProgramEnd:
         mov.b #0x9F, &0xA32 ; E
         mov.b #0x6C, &0xA2E ; N (vertical bars)
